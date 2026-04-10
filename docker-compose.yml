@@ -1,0 +1,31 @@
+﻿version: '3.8'
+
+services:
+  # Quasar Frontend (desarrollo)
+  frontend:
+    build:
+      context: ./frontend_web
+      dockerfile: Dockerfile
+      target: development
+    container_name: plataforma_frontend
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - VITE_API_BACKEND_URL=
+      - VITE_API_URL=
+      - VITE_APP_ENV=
+    volumes:
+      - ./frontend_web:/app
+      - /app/node_modules
+      - /app/.quasar
+    # Depende de un backend externo; si se usa docker-compose conjunto, agregar depends_on
+    # depends_on:
+    #   - backend
+    networks:
+      - frontend_network
+    command: npm run dev -- --port 9000
+
+networks:
+  frontend_network:
+    driver: bridge

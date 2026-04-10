@@ -1,0 +1,45 @@
+// ── Premium Design System Variables ──────────────────────────
+// Paleta: Violeta eléctrico + Cyan vibrante sobre fondo oscuro
+
+// Brand
+$primary: #6c5ce7;
+$secondary: #00d2d3;
+$accent: #a29bfe;
+
+// Surfaces (Dark Mode)
+$dark: #0f0f23;
+$dark-page: #0f0f23;
+$dark-surface: #1a1a3e;
+$dark-card: #232350;
+$dark-border: #2d2d5e;
+
+// Semantic
+$positive: #00b894;
+$negative: #e17055;
+$warning: #fdcb6e;
+$info: #74b9ff;
+
+// Text
+$text-primary: #eaeaf5;
+$text-secondary: #8b8ba7;
+$text-muted: #5a5a7a;
+
+// Gradients
+$gradient-primary: linear-gradient(135deg, $primary 0%, $accent 100%);
+$gradient-hero: linear-gradient(160deg, #0f0f23 0%, #1a1a3e 50%, #232350 100%);
+
+// Shadows
+$shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+$shadow-float: 0 8px 40px rgba(108, 92, 231, 0.15);
+$shadow-glow: 0 0 20px rgba(108, 92, 231, 0.3);
+
+// Radius
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 20px;
+$radius-xl: 28px;
+
+// Transitions
+$transition-fast: 0.15s ease;
+$transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);

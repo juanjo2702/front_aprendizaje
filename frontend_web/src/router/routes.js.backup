@@ -1,0 +1,42 @@
+const routes = [
+  // ─── Public (MainLayout) ────────────────────────────────
+  {
+    path: '/',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '',                name: 'home',          component: () => import('pages/public/HomePage.vue') },
+      { path: 'catalog',        name: 'catalog',       component: () => import('pages/public/CatalogPage.vue') },
+      { path: 'courses/:slug',  name: 'course-detail', component: () => import('pages/public/CourseDetailPage.vue') },
+    ]
+  },
+
+  // ─── Auth (AuthLayout) ──────────────────────────────────
+  {
+    path: '/',
+    component: () => import('layouts/AuthLayout.vue'),
+    children: [
+      { path: 'login',    name: 'login',    component: () => import('pages/auth/LoginPage.vue') },
+      { path: 'register', name: 'register', component: () => import('pages/auth/RegisterPage.vue') },
+      { path: 'auth/social-callback', name: 'social-callback', component: () => import('pages/auth/SocialCallbackPage.vue') },
+    ]
+  },
+
+  // ─── Protected (MainLayout) ─────────────────────────────
+  {
+    path: '/',
+    component: () => import('layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      { path: 'dashboard', name: 'dashboard', component: () => import('pages/dashboard/DashboardPage.vue') },
+      { path: 'lessons/:lessonId', name: 'lesson-player', component: () => import('pages/lessons/LessonPlayerPage.vue') },
+    ]
+  },
+
+  // ─── 404 ────────────────────────────────────────────────
+  {
+    path: '/:catchAll(.*)*',
+    component: () => import('pages/ErrorNotFound.vue')
+  }
+]
+
+export default routes
