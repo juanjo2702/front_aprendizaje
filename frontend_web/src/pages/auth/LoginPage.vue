@@ -80,6 +80,42 @@
         />
       </div>
 
+      <q-separator dark class="q-my-md" />
+
+      <div class="text-caption text-center q-mb-sm" style="color: #8b8ba7">Acceso rápido demo</div>
+      <div class="row q-gutter-sm">
+        <q-btn
+          outline
+          no-caps
+          class="col"
+          color="white"
+          text-color="white"
+          label="Estudiante"
+          :loading="loadingDemo === 'student'"
+          @click="loginAsDemo('student')"
+        />
+        <q-btn
+          outline
+          no-caps
+          class="col"
+          color="white"
+          text-color="white"
+          label="Docente"
+          :loading="loadingDemo === 'instructor'"
+          @click="loginAsDemo('instructor')"
+        />
+        <q-btn
+          outline
+          no-caps
+          class="col"
+          color="white"
+          text-color="white"
+          label="Admin"
+          :loading="loadingDemo === 'admin'"
+          @click="loginAsDemo('admin')"
+        />
+      </div>
+
       <!-- Register Link -->
       <div class="text-center q-mt-lg">
         <span style="color: #8b8ba7">¿No tienes cuenta?</span>
@@ -103,25 +139,43 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, reactive } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from 'src/stores/auth'
 import { api } from 'src/services/api'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({ email: '', password: '' })
 const showPass = ref(false)
 const loading = ref(false)
+const loadingDemo = ref('')
 const showError = ref(false)
 const errorMsg = ref('')
+
+onMounted(() => {
+  const socialError = route.query.social_error
+  const sessionExpired = route.query.session === 'expired'
+
+  if (sessionExpired) {
+    errorMsg.value = 'Tu sesión expiró. Inicia sesión nuevamente para continuar.'
+    showError.value = true
+    return
+  }
+
+  if (socialError) {
+    errorMsg.value = String(socialError)
+    showError.value = true
+  }
+})
 
 async function handleLogin() {
   loading.value = true
   try {
-    await auth.login(form.email, form.password)
-    router.push('/dashboard')
+    const result = await auth.login(form.email, form.password)
+    router.push(resolveHomeRoute(result?.user?.role))
   } catch (e) {
     errorMsg.value = e?.response?.data?.message || 'Error al iniciar sesión.'
     showError.value = true
@@ -133,11 +187,45 @@ async function handleLogin() {
 async function handleSocialLogin(provider) {
   try {
     const { data } = await api.get(`/auth/${provider}/redirect`)
+    if (!data?.url) {
+      throw new Error(data?.message || `No se recibió URL de autenticación para ${provider}.`)
+    }
     window.location.href = data.url
   } catch (e) {
-    errorMsg.value = `Error al conectar con ${provider}.`
+    errorMsg.value = e?.response?.data?.message || e?.message || `Error al conectar con ${provider}.`
     showError.value = true
   }
+}
+
+async function loginAsDemo(role) {
+  const credentials = {
+    student: { email: 'estudiante@plataforma.com', password: 'password' },
+    instructor: { email: 'profesor@plataforma.com', password: 'password' },
+    admin: { email: 'admin@plataforma.com', password: 'password' },
+  }
+
+  const selected = credentials[role]
+  if (!selected) return
+
+  form.email = selected.email
+  form.password = selected.password
+  loadingDemo.value = role
+
+  try {
+    const result = await auth.login(selected.email, selected.password)
+    router.push(resolveHomeRoute(result?.user?.role))
+  } catch (e) {
+    errorMsg.value = e?.response?.data?.message || 'No se pudo iniciar sesión con cuenta demo.'
+    showError.value = true
+  } finally {
+    loadingDemo.value = ''
+  }
+}
+
+function resolveHomeRoute(role) {
+  if (role === 'admin') return '/admin/dashboard'
+  if (role === 'instructor') return '/teacher/dashboard'
+  return '/student/dashboard'
 }
 </script>
 

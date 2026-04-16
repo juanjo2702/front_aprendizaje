@@ -15,6 +15,10 @@
         <q-select
           v-model="filter.type"
           :options="typeOptions"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
           label="Tipo de actividad"
           outlined
           dense
@@ -23,13 +27,17 @@
         <q-select
           v-model="filter.course"
           :options="courseOptions"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
           label="Curso"
           outlined
           dense
           style="min-width: 180px"
         />
         <q-input
-          v-model="filter.dateRange"
+          :model-value="dateRangeLabel"
           label="Rango de fechas"
           outlined
           dense
@@ -118,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { api } from 'src/services/api'
 
 const loading = ref(true)
@@ -152,7 +160,12 @@ const courseOptions = computed(() => [
   ...userCourses.value.map((course) => ({ label: course.title, value: course.id })),
 ])
 
-const filteredActivities = computed(() => {
+const dateRangeLabel = computed(() => {
+  if (!filter.dateRange?.from || !filter.dateRange?.to) return ''
+  return `${filter.dateRange.from} - ${filter.dateRange.to}`
+})
+
+const filteredActivitiesBase = computed(() => {
   let filtered = activities.value
 
   if (filter.type !== 'all') {
@@ -172,10 +185,14 @@ const filteredActivities = computed(() => {
     })
   }
 
+  return filtered
+})
+
+const filteredActivities = computed(() => {
   // Pagination slicing
   const start = (pagination.page - 1) * pagination.perPage
   const end = start + pagination.perPage
-  return filtered.slice(start, end)
+  return filteredActivitiesBase.value.slice(start, end)
 })
 
 function formatDate(dateString) {
@@ -213,7 +230,19 @@ function clearFilters() {
   filter.type = 'all'
   filter.course = 'all'
   filter.dateRange = { from: null, to: null }
+  pagination.page = 1
 }
+
+watch(
+  () => filteredActivitiesBase.value.length,
+  (count) => {
+    pagination.totalPages = Math.max(1, Math.ceil(count / pagination.perPage))
+    if (pagination.page > pagination.totalPages) {
+      pagination.page = pagination.totalPages
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   loadActivities()

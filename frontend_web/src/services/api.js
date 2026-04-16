@@ -1,5 +1,10 @@
 import axios from 'axios'
 
+function clearStoredSession() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+}
+
 // ── Standalone API instance (no Quasar dependency) ───────────
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -35,13 +40,14 @@ api.interceptors.response.use(
 
     if (status === 401 && !redirecting) {
       redirecting = true
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      clearStoredSession()
 
       try {
-        const { default: router } = await import('src/router')
-        if (router.currentRoute.value.name !== 'login') {
-          router.replace({ name: 'login' })
+        if (typeof window !== 'undefined') {
+          const isAuthPage = ['/login', '/register'].includes(window.location.pathname)
+          if (!isAuthPage) {
+            window.location.replace('/login?session=expired')
+          }
         }
       } catch (e) {
         console.error('[AUTH] Redirect error:', e)

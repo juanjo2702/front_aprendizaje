@@ -35,25 +35,28 @@ export default defineRouter(function ({ store, ssrContext }) {
   Router.beforeEach((to, _from) => {
     const token = localStorage.getItem('token')
     const requiresAuth = to.matched.some((r) => r.meta.requiresAuth)
-    const requiresAdmin = to.matched.some((r) => r.meta.requiresAdmin)
+    const roleRules = to.matched
+      .map((r) => r.meta?.requiresRole)
+      .filter(Boolean)
+      .flat()
 
     if (requiresAuth && !token) {
       return { name: 'login' }
     } else if ((to.name === 'login' || to.name === 'register') && token) {
-      return { name: 'dashboard' }
+      return resolveHomeRouteByRole()
     }
 
-    // Admin route protection
-    if (requiresAdmin && token) {
+    // Role route protection
+    if (roleRules.length && token) {
       try {
         const user = JSON.parse(localStorage.getItem('user') || 'null')
-        if (!user || user.role !== 'admin') {
-          console.warn('Intento de acceso a ruta admin sin permisos:', to.path)
-          return { name: 'dashboard' }
+        if (!user || !roleRules.includes(user.role)) {
+          console.warn('Intento de acceso sin permisos de rol:', to.path)
+          return resolveHomeRouteByRole(user?.role)
         }
       } catch (error) {
-        console.error('Error verificando permisos admin:', error)
-        return { name: 'dashboard' }
+        console.error('Error verificando permisos de rol:', error)
+        return resolveHomeRouteByRole()
       }
     }
 
@@ -63,3 +66,17 @@ export default defineRouter(function ({ store, ssrContext }) {
 
   return Router
 })
+
+function resolveHomeRouteByRole(role) {
+  const userRole = role || JSON.parse(localStorage.getItem('user') || 'null')?.role
+
+  if (userRole === 'admin') {
+    return { name: 'admin-dashboard' }
+  }
+
+  if (userRole === 'instructor') {
+    return { name: 'teacher-dashboard' }
+  }
+
+  return { name: 'student-dashboard' }
+}

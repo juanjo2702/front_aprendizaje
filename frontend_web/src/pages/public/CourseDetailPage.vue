@@ -7,6 +7,10 @@
     </div>
 
     <div v-else-if="course" class="animate-fade-in-up">
+      <q-banner v-if="previewMode" rounded class="bg-secondary text-dark q-mb-md">
+        Vista previa docente: estás viendo este curso como lo vería el estudiante, incluso si sigue en borrador.
+      </q-banner>
+
       <!-- Hero Banner -->
       <div class="course-hero glass-card q-pa-xl q-mb-xl">
         <div class="row q-gutter-xl">
@@ -42,19 +46,45 @@
           </div>
 
           <div class="col-12 col-md-5">
-            <q-card class="glass-card q-pa-lg text-center">
-              <div class="text-h3 text-weight-bold q-mb-md" style="color: #00d2d3">
+              <q-card class="glass-card q-pa-lg text-center">
+              <div v-if="previewMode" class="text-h6 q-mb-sm" style="color: #00d2d3">
+                Vista previa activa
+              </div>
+              <div v-else-if="isEnrolled" class="text-h6 q-mb-sm" style="color: #00d2d3">
+                Ya estás inscrito en este curso
+              </div>
+              <div v-else class="text-h3 text-weight-bold q-mb-md" style="color: #00d2d3">
                 ${{ course.price }}
               </div>
               <q-btn
+                v-if="previewMode"
+                class="btn-gradient full-width q-mb-sm"
+                no-caps
+                size="lg"
+                label="Abrir vista previa del contenido"
+                icon="visibility"
+                @click="goToLearning"
+              />
+              <q-btn
+                v-else-if="isEnrolled"
+                class="btn-gradient full-width q-mb-sm"
+                no-caps
+                size="lg"
+                label="Continuar curso"
+                icon="play_circle"
+                @click="goToLearning"
+              />
+              <q-btn
+                v-else
                 class="btn-gradient full-width q-mb-sm"
                 no-caps
                 size="lg"
                 label="Inscribirme ahora"
                 icon="shopping_cart"
-                @click="$refs.checkoutModal.open()"
+                @click="openCheckout"
               />
               <q-btn
+                v-if="!previewMode"
                 outline
                 color="white"
                 text-color="white"
@@ -110,7 +140,13 @@
                 </q-item-section>
               </template>
               <q-list separator dark>
-                <q-item v-for="lesson in mod.lessons" :key="lesson.id" class="q-pl-xl">
+                <q-item
+                  v-for="lesson in mod.lessons"
+                  :key="lesson.id"
+                  class="q-pl-xl"
+                  :clickable="previewMode"
+                  @click="openCurriculumLesson(lesson)"
+                >
                   <q-item-section avatar>
                     <q-icon
                       :name="lesson.type === 'video' ? 'play_circle' : 'article'"
@@ -165,12 +201,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services/api'
+import { useAuthStore } from 'src/stores/auth'
 import CheckoutModal from 'src/components/CheckoutModal.vue'
 
+const props = defineProps({
+  previewMode: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const course = ref(null)
 const loading = ref(true)
 const checkoutModal = ref(null)
@@ -193,9 +239,57 @@ function formatDuration(seconds) {
   return m > 0 ? `${m} min` : `${s} seg`
 }
 
+const isEnrolled = computed(() => Boolean(course.value?.is_enrolled))
+
+const firstLessonId = computed(() => {
+  if (!course.value?.modules?.length) return null
+
+  for (const module of course.value.modules) {
+    const lessons = [...(module.lessons || [])].sort((a, b) => a.sort_order - b.sort_order)
+    if (lessons.length) {
+      return lessons[0].id
+    }
+  }
+
+  return null
+})
+
+function goToLearning() {
+  if (firstLessonId.value) {
+    if (props.previewMode) {
+      router.push({ name: 'teacher-lesson-preview', params: { lessonId: firstLessonId.value } })
+      return
+    }
+    router.push(`/lessons/${firstLessonId.value}`)
+    return
+  }
+
+  if (props.previewMode) {
+    return
+  }
+
+  router.push(`/courses/${route.params.slug}/progress`)
+}
+
+function openCurriculumLesson(lesson) {
+  if (!props.previewMode || !lesson?.id) return
+  router.push({ name: 'teacher-lesson-preview', params: { lessonId: lesson.id } })
+}
+
+function openCheckout() {
+  if (!auth.isAuthenticated) {
+    router.push('/login')
+    return
+  }
+
+  checkoutModal.value?.open()
+}
+
 onMounted(async () => {
   try {
-    const { data } = await api.get(`/courses/${route.params.slug}`)
+    const { data } = await api.get(`/courses/${route.params.slug}`, {
+      params: props.previewMode ? { preview: 1 } : undefined,
+    })
     course.value = data
   } catch (e) {
     console.error('Error loading course:', e)

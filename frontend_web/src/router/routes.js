@@ -1,20 +1,14 @@
 const routes = [
-  // ─── Public (MainLayout) ────────────────────────────────
+  // ─── Public ──────────────────────────────────────────────
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', name: 'home', component: () => import('pages/public/HomePage.vue') },
-      { path: 'catalog', name: 'catalog', component: () => import('pages/public/CatalogPage.vue') },
-      {
-        path: 'courses/:slug',
-        name: 'course-detail',
-        component: () => import('pages/public/CourseDetailPage.vue'),
-      },
     ],
   },
 
-  // ─── Auth (AuthLayout) ──────────────────────────────────
+  // ─── Auth ────────────────────────────────────────────────
   {
     path: '/',
     component: () => import('layouts/AuthLayout.vue'),
@@ -33,78 +27,129 @@ const routes = [
     ],
   },
 
-  // ─── Protected (MainLayout) ─────────────────────────────
+  // ─── Student (The Player) ───────────────────────────────
   {
-    path: '/',
-    component: () => import('layouts/MainLayout.vue'),
-    meta: { requiresAuth: true },
+    path: '/student',
+    component: () => import('layouts/StudentLayout.vue'),
+    meta: { requiresAuth: true, requiresRole: ['student'] },
     children: [
       {
         path: 'dashboard',
-        name: 'dashboard',
+        name: 'student-dashboard',
         component: () => import('pages/dashboard/DashboardPage.vue'),
       },
       {
-        path: 'lessons/:lessonId',
-        name: 'lesson-player',
+        path: 'store',
+        name: 'student-store',
+        component: () => import('pages/public/CatalogPage.vue'),
+      },
+      {
+        path: 'courses/:slug',
+        name: 'student-course-detail',
+        component: () => import('pages/public/CourseDetailPage.vue'),
+      },
+      {
+        path: 'arena/:lessonId',
+        name: 'student-arena',
         component: () => import('pages/lessons/LessonPlayerPage.vue'),
       },
       {
-        path: 'user/profile',
-        name: 'user-profile',
+        path: 'profile',
+        name: 'student-profile',
         component: () => import('pages/user/UserProfilePage.vue'),
       },
       {
-        path: 'user/courses',
-        name: 'user-courses',
+        path: 'courses',
+        name: 'student-courses',
         component: () => import('pages/user/UserCoursesPage.vue'),
       },
       {
-        path: 'user/activity',
-        name: 'user-activity',
+        path: 'activity',
+        name: 'student-activity',
         component: () => import('pages/user/UserActivityPage.vue'),
       },
       {
         path: 'badges/my',
-        name: 'badges-my',
+        name: 'student-badges-my',
         component: () => import('pages/badges/BadgesPage.vue'),
       },
       {
         path: 'badges/available',
-        name: 'badges-available',
+        name: 'student-badges-available',
         component: () => import('pages/badges/AvailableBadgesPage.vue'),
       },
       {
         path: 'badges/:id',
-        name: 'badge-detail',
+        name: 'student-badge-detail',
         component: () => import('pages/badges/BadgeDetailPage.vue'),
       },
       {
         path: 'certificates',
-        name: 'certificates',
+        name: 'student-certificates',
         component: () => import('pages/certificates/CertificatesPage.vue'),
       },
       {
         path: 'certificates/:id',
-        name: 'certificate-detail',
+        name: 'student-certificate-detail',
         component: () => import('pages/certificates/CertificateDetailPage.vue'),
       },
       {
         path: 'courses/:slug/progress',
-        name: 'course-progress',
+        name: 'student-course-progress',
         component: () => import('pages/courses/CourseProgressPage.vue'),
       },
     ],
   },
 
-  // ─── Admin (AdminLayout) ────────────────────────────────
+  // ─── Teacher (The Creator) ──────────────────────────────
+  {
+    path: '/teacher',
+    component: () => import('layouts/TeacherLayout.vue'),
+    meta: { requiresAuth: true, requiresRole: ['instructor'] },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'teacher-dashboard',
+        component: () => import('pages/teacher/TeacherDashboardPage.vue'),
+      },
+      {
+        path: 'courses',
+        name: 'teacher-courses',
+        component: () => import('pages/teacher/CourseBuilderPage.vue'),
+      },
+      {
+        path: 'courses/:slug/preview',
+        name: 'teacher-course-preview',
+        component: () => import('pages/public/CourseDetailPage.vue'),
+        props: { previewMode: true },
+      },
+      {
+        path: 'preview/lesson/:lessonId',
+        name: 'teacher-lesson-preview',
+        component: () => import('pages/lessons/LessonPlayerPage.vue'),
+        props: { previewMode: true },
+      },
+      {
+        path: 'gamification',
+        name: 'teacher-gamification',
+        component: () => import('pages/teacher/TeacherGamificationPage.vue'),
+      },
+      {
+        path: 'activities',
+        name: 'teacher-activities',
+        component: () => import('pages/teacher/TeacherActivitiesPage.vue'),
+      },
+    ],
+  },
+
+  // ─── Admin (The Game Master) ────────────────────────────
   {
     path: '/admin',
     component: () => import('layouts/AdminLayout.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true },
+    meta: { requiresAuth: true, requiresRole: ['admin'] },
     children: [
       {
-        path: '',
+        path: 'dashboard',
         name: 'admin-dashboard',
         component: () => import('pages/admin/AdminDashboardPage.vue'),
       },
@@ -185,6 +230,17 @@ const routes = [
       },
     ],
   },
+
+  // ─── Legacy Redirects (compatibility) ───────────────────
+  { path: '/dashboard', redirect: { name: 'student-dashboard' } },
+  { path: '/catalog', redirect: { name: 'student-store' } },
+  { path: '/courses/:slug', redirect: (to) => `/student/courses/${to.params.slug}` },
+  { path: '/lessons/:lessonId', redirect: (to) => `/student/arena/${to.params.lessonId}` },
+  { path: '/user/profile', redirect: { name: 'student-profile' } },
+  { path: '/user/courses', redirect: { name: 'student-courses' } },
+  { path: '/user/activity', redirect: { name: 'student-activity' } },
+  { path: '/instructor/courses', redirect: { name: 'teacher-courses' } },
+  { path: '/admin', redirect: { name: 'admin-dashboard' } },
 
   // ─── 404 ────────────────────────────────────────────────
   {

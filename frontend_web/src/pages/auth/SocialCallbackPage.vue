@@ -37,7 +37,13 @@ onMounted(() => {
         position: 'top-right',
       })
 
-      router.push({ name: 'dashboard' })
+      const homeByRole = {
+        admin: { name: 'admin-dashboard' },
+        instructor: { name: 'teacher-dashboard' },
+        student: { name: 'student-dashboard' },
+      }
+
+      router.push(homeByRole[user.role] || { name: 'student-dashboard' })
     } catch (e) {
       $q.notify({
         type: 'negative',

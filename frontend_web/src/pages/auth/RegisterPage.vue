@@ -143,9 +143,15 @@ async function handleRegister() {
 async function handleSocialLogin(provider) {
   try {
     const { data } = await api.get(`/auth/${provider}/redirect`)
+    if (!data?.url) {
+      throw new Error(data?.message || `No se recibió URL de autenticación para ${provider}.`)
+    }
     window.location.href = data.url
   } catch (e) {
-    $q.notify({ type: 'negative', message: `Error al conectar con ${provider}.` })
+    $q.notify({
+      type: 'negative',
+      message: e?.response?.data?.message || e?.message || `Error al conectar con ${provider}.`,
+    })
   }
 }
 </script>

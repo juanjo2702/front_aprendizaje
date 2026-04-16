@@ -30,6 +30,22 @@
         <!-- Nav links (desktop) -->
         <div class="row items-center q-gutter-md gt-sm">
           <q-btn flat no-caps label="Explorar" icon="explore" to="/catalog" />
+          <q-btn
+            v-if="auth.isInstructor"
+            flat
+            no-caps
+            label="Panel docente"
+            icon="school"
+            to="/teacher/courses"
+          />
+          <q-btn
+            v-if="auth.isAdmin"
+            flat
+            no-caps
+            label="Admin"
+            icon="admin_panel_settings"
+            to="/admin"
+          />
         </div>
 
         <!-- User Section -->
@@ -52,6 +68,16 @@
                   <q-item v-close-popup clickable to="/dashboard">
                     <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
                     <q-item-section>Dashboard</q-item-section>
+                  </q-item>
+                  <q-item v-if="auth.isInstructor" v-close-popup clickable to="/teacher/courses">
+                    <q-item-section avatar><q-icon name="school" /></q-item-section>
+                    <q-item-section>Panel docente</q-item-section>
+                  </q-item>
+                  <q-item v-if="auth.isAdmin" v-close-popup clickable to="/admin">
+                    <q-item-section avatar>
+                      <q-icon name="admin_panel_settings" />
+                    </q-item-section>
+                    <q-item-section>Panel admin</q-item-section>
                   </q-item>
                   <q-item v-close-popup clickable @click="handleLogout">
                     <q-item-section avatar
@@ -96,6 +122,14 @@
           <q-item v-ripple clickable to="/dashboard">
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Mi Dashboard</q-item-section>
+          </q-item>
+          <q-item v-if="auth.isInstructor" v-ripple clickable to="/teacher/courses">
+            <q-item-section avatar><q-icon name="school" /></q-item-section>
+            <q-item-section>Panel docente</q-item-section>
+          </q-item>
+          <q-item v-if="auth.isAdmin" v-ripple clickable to="/admin">
+            <q-item-section avatar><q-icon name="admin_panel_settings" /></q-item-section>
+            <q-item-section>Panel admin</q-item-section>
           </q-item>
         </template>
       </q-list>
