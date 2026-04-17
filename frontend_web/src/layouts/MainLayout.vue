@@ -6,7 +6,7 @@
         <q-btn flat dense round icon="menu" class="lt-md" @click="toggleDrawer" />
 
         <!-- Logo -->
-        <div class="row items-center cursor-pointer q-mr-lg" @click="$router.push('/')">
+        <div class="row items-center cursor-pointer q-mr-lg" @click="goHome">
           <q-icon name="school" size="28px" color="primary" class="q-mr-sm" />
           <span class="text-h6 text-weight-bold text-gradient">Plataforma</span>
         </div>
@@ -29,7 +29,7 @@
 
         <!-- Nav links (desktop) -->
         <div class="row items-center q-gutter-md gt-sm">
-          <q-btn flat no-caps label="Explorar" icon="explore" to="/catalog" />
+          <q-btn flat no-caps label="Explorar" icon="explore" :to="{ name: 'public-catalog' }" />
           <q-btn
             v-if="auth.isInstructor"
             flat
@@ -65,7 +65,7 @@
                     </q-item-section>
                   </q-item>
                   <q-separator dark />
-                  <q-item v-close-popup clickable to="/dashboard">
+                  <q-item v-close-popup clickable :to="dashboardRoute">
                     <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
                     <q-item-section>Dashboard</q-item-section>
                   </q-item>
@@ -113,13 +113,13 @@
           <q-item-section avatar><q-icon name="home" /></q-item-section>
           <q-item-section>Inicio</q-item-section>
         </q-item>
-        <q-item v-ripple clickable to="/catalog">
+          <q-item v-ripple clickable :to="{ name: 'public-catalog' }">
           <q-item-section avatar><q-icon name="explore" /></q-item-section>
           <q-item-section>Explorar cursos</q-item-section>
         </q-item>
         <template v-if="auth.isAuthenticated">
           <q-separator dark class="q-my-sm" />
-          <q-item v-ripple clickable to="/dashboard">
+          <q-item v-ripple clickable :to="dashboardRoute">
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Mi Dashboard</q-item-section>
           </q-item>
@@ -162,13 +162,34 @@ const initials = computed(() => {
     .slice(0, 2)
 })
 
+const dashboardRoute = computed(() => {
+  if (auth.isAdmin) return { name: 'admin-dashboard' }
+  if (auth.isInstructor) return { name: 'teacher-dashboard' }
+  if (auth.isAuthenticated) return { name: 'student-dashboard' }
+  return { name: 'login' }
+})
+
 function toggleDrawer() {
   drawerOpen.value = !drawerOpen.value
 }
 
+function goHome() {
+  if (auth.isAdmin) {
+    router.push({ name: 'admin-dashboard' })
+    return
+  }
+
+  if (auth.isInstructor) {
+    router.push({ name: 'teacher-dashboard' })
+    return
+  }
+
+  router.push({ name: 'home' })
+}
+
 function doSearch() {
   if (searchQuery.value.trim()) {
-    router.push({ path: '/catalog', query: { search: searchQuery.value } })
+    router.push({ name: 'public-catalog', query: { search: searchQuery.value } })
   }
 }
 

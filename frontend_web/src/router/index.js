@@ -40,6 +40,10 @@ export default defineRouter(function ({ store, ssrContext }) {
       .filter(Boolean)
       .flat()
 
+    if (to.name === 'home' && token) {
+      return resolveHomeRouteByRole()
+    }
+
     if (requiresAuth && !token) {
       return { name: 'login' }
     } else if ((to.name === 'login' || to.name === 'register') && token) {

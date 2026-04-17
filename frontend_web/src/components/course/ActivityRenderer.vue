@@ -5,26 +5,31 @@
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 350 } }"
     >
-        <div class="row items-center justify-between q-mb-md">
-          <div>
-            <div class="text-h6 text-weight-bold">{{ activityTitle }}</div>
-            <div class="text-caption text-grey-5">
-              Tipo: {{ activityTypeLabel }} • Modo: {{ authoringModeLabel }}
-            </div>
+      <div class="row items-center justify-between q-mb-md">
+        <div>
+          <div class="text-h6 text-weight-bold">{{ activityTitle }}</div>
+          <div class="text-caption text-grey-5">
+            Tipo: {{ activityTypeLabel }} • Modo: {{ authoringModeLabel }}
           </div>
-          <q-badge :color="previewMode ? 'secondary' : 'primary'" outline>
-            {{ previewMode ? 'Vista previa' : 'Actividad interactiva' }}
-          </q-badge>
         </div>
+        <q-badge :color="previewMode ? 'secondary' : 'primary'" outline>
+          {{ previewMode ? 'Vista previa' : 'Actividad interactiva' }}
+        </q-badge>
+      </div>
 
-      <template v-if="activityType === 'trivia'">
+      <template v-if="normalizedActivityType === 'trivia'">
         <div v-if="!started" class="text-center q-py-md">
           <q-icon name="mdi-lightbulb-on-outline" size="42px" color="primary" />
           <div class="q-mt-sm text-subtitle1">Trivia lista para jugar</div>
           <q-btn color="primary" no-caps class="q-mt-md" label="Iniciar trivia" @click="startTrivia" />
         </div>
 
-        <div v-else-if="!isFinished && currentQuestion" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
+        <div
+          v-else-if="!isFinished && currentQuestion"
+          v-motion
+          :initial="{ opacity: 0 }"
+          :enter="{ opacity: 1 }"
+        >
           <div class="text-subtitle1 text-weight-medium q-mb-md">
             Pregunta {{ currentQuestionIndex + 1 }} de {{ questions.length }}
           </div>
@@ -55,11 +60,26 @@
             color="positive"
             no-caps
             icon="mdi-check-circle-outline"
-            :label="previewMode ? 'Finalizar vista previa' : 'Registrar resultado'"
+            :label="previewMode && previewCompletionSent ? 'Vista previa finalizada' : (previewMode ? 'Finalizar vista previa' : 'Registrar resultado')"
+            :disable="previewMode && previewCompletionSent"
             @click="emitCompleted"
           />
         </div>
       </template>
+
+      <MatchingActivity
+        v-else-if="isMatchingType"
+        :payload="payload"
+        :preview-mode="previewMode"
+        @completed="forwardCompleted"
+      />
+
+      <CrosswordActivity
+        v-else-if="isCrosswordType"
+        :payload="payload"
+        :preview-mode="previewMode"
+        @completed="forwardCompleted"
+      />
 
       <template v-else>
         <div class="q-pa-md rounded-borders bg-dark text-grey-3">
@@ -71,7 +91,7 @@
           </div>
         </div>
         <div class="q-mt-md">
-          <q-btn color="primary" no-caps label="Marcar actividad como completada" @click="emitCompleted" />
+          <q-btn color="primary" no-caps label="Marcar actividad como completada" @click="forwardCompleted({ score: 1, max_score: 1 })" />
         </div>
       </template>
     </div>
@@ -79,7 +99,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import CrosswordActivity from 'src/components/course/CrosswordActivity.vue'
+import MatchingActivity from 'src/components/course/MatchingActivity.vue'
 
 const props = defineProps({
   interactiveConfig: {
@@ -97,10 +119,14 @@ const emit = defineEmits(['completed'])
 const started = ref(false)
 const currentQuestionIndex = ref(0)
 const finalScore = ref(0)
+const previewCompletionSent = ref(false)
 
 const payload = computed(() => props.interactiveConfig?.config_payload || {})
 const activityType = computed(() => props.interactiveConfig?.activity_type || 'trivia')
-const activityTypeLabel = computed(() => activityType.value.toUpperCase())
+const normalizedActivityType = computed(() => String(activityType.value || 'trivia').trim().toLowerCase())
+const isMatchingType = computed(() => ['matching', 'match', 'emparejamiento', 'relacionar'].includes(normalizedActivityType.value))
+const isCrosswordType = computed(() => ['crossword', 'crucigrama'].includes(normalizedActivityType.value))
+const activityTypeLabel = computed(() => normalizedActivityType.value.toUpperCase())
 const authoringModeLabel = computed(() => (props.interactiveConfig?.authoring_mode === 'custom' ? 'Custom' : 'Formulario'))
 const activityTitle = computed(() => payload.value?.title || 'Actividad interactiva')
 
@@ -159,9 +185,30 @@ function answerTrivia(option) {
 }
 
 function emitCompleted() {
+  if (props.previewMode && previewCompletionSent.value) return
+  if (props.previewMode) previewCompletionSent.value = true
+
   emit('completed', {
     score: finalScore.value || maxScore.value,
     max_score: maxScore.value || finalScore.value || 1,
   })
 }
+
+function forwardCompleted(result) {
+  emit('completed', {
+    score: Number(result?.score ?? 0),
+    max_score: Number(result?.max_score ?? 1),
+  })
+}
+
+watch(
+  () => props.interactiveConfig,
+  () => {
+    started.value = false
+    currentQuestionIndex.value = 0
+    finalScore.value = 0
+    previewCompletionSent.value = false
+  },
+  { deep: true, immediate: true },
+)
 </script>

@@ -5,6 +5,12 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', name: 'home', component: () => import('pages/public/HomePage.vue') },
+      { path: 'catalog', name: 'public-catalog', component: () => import('pages/public/CatalogPage.vue') },
+      {
+        path: 'courses/:slug',
+        name: 'public-course-detail',
+        component: () => import('pages/public/CourseDetailPage.vue'),
+      },
     ],
   },
 
@@ -116,6 +122,16 @@ const routes = [
         path: 'courses',
         name: 'teacher-courses',
         component: () => import('pages/teacher/CourseBuilderPage.vue'),
+      },
+      {
+        path: 'marketplace',
+        name: 'teacher-marketplace',
+        component: () => import('pages/public/CatalogPage.vue'),
+      },
+      {
+        path: 'marketplace/:slug',
+        name: 'teacher-marketplace-course',
+        component: () => import('pages/public/CourseDetailPage.vue'),
       },
       {
         path: 'courses/:slug/preview',
@@ -233,8 +249,6 @@ const routes = [
 
   // ─── Legacy Redirects (compatibility) ───────────────────
   { path: '/dashboard', redirect: { name: 'student-dashboard' } },
-  { path: '/catalog', redirect: { name: 'student-store' } },
-  { path: '/courses/:slug', redirect: (to) => `/student/courses/${to.params.slug}` },
   { path: '/lessons/:lessonId', redirect: (to) => `/student/arena/${to.params.lessonId}` },
   { path: '/user/profile', redirect: { name: 'student-profile' } },
   { path: '/user/courses', redirect: { name: 'student-courses' } },

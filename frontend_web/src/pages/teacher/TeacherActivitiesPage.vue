@@ -39,6 +39,7 @@
             <div class="text-caption text-grey-6">{{ config.module?.title || 'Sin módulo' }}</div>
           </div>
           <div class="col-12 col-md-5 row justify-end q-gutter-sm">
+            <q-btn flat no-caps color="secondary" icon="visibility" label="Previsualizar" @click="previewConfig(config)" :disable="!config.lesson_id" />
             <q-btn flat no-caps color="primary" icon="edit" label="Editar" @click="openDialog(config)" />
             <q-btn flat no-caps color="negative" icon="block" label="Desactivar" @click="removeConfig(config)" />
           </div>
@@ -57,13 +58,37 @@
             <div class="col-12 col-md-6"><q-select v-model="form.module_id" :options="moduleOptions" emit-value map-options label="Módulo" outlined dense @update:model-value="syncLessons" /></div>
             <div class="col-12 col-md-6"><q-select v-model="form.lesson_id" :options="lessonOptions" emit-value map-options label="Lección" outlined dense /></div>
             <div class="col-12 col-md-6"><q-select v-model="form.authoring_mode" :options="authoringOptions" emit-value map-options label="Modo de autoría" outlined dense /></div>
-            <div class="col-12 col-md-6"><q-input v-model="form.activity_type" label="Tipo de actividad" outlined dense /></div>
+            <div class="col-12 col-md-6"><q-select v-model="form.activity_type" :options="activityTypeOptions" emit-value map-options label="Tipo de actividad" outlined dense /></div>
             <div class="col-12 col-md-4"><q-input v-model.number="form.version" type="number" min="1" label="Versión" outlined dense /></div>
             <div class="col-12 col-md-4 flex flex-center"><q-toggle v-model="form.is_active" label="Activa" color="secondary" /></div>
+            <div class="col-12 col-md-4 row justify-end items-center">
+              <q-btn flat no-caps color="secondary" icon="auto_fix_high" label="Cargar plantilla" @click="applyActivityTemplate" />
+            </div>
+            <div class="col-12">
+              <q-banner rounded class="bg-dark text-grey-4">
+                {{ activityHint }}
+              </q-banner>
+            </div>
             <div class="col-12"><q-input v-model="form.config_text" type="textarea" label="Configuración JSON" outlined autogrow /></div>
+            <div class="col-12">
+              <TeacherActivityDraftPreview
+                :activity-type="form.activity_type"
+                :authoring-mode="form.authoring_mode"
+                :config-text="form.config_text"
+              />
+            </div>
           </div>
         </q-card-section>
         <q-card-actions align="right">
+          <q-btn
+            flat
+            no-caps
+            color="secondary"
+            icon="visibility"
+            label="Previsualizar"
+            :disable="!form.lesson_id"
+            @click="previewLesson(form.lesson_id)"
+          />
           <q-btn flat no-caps color="grey-5" label="Cancelar" @click="closeDialog" />
           <q-btn color="primary" no-caps :loading="saving" label="Guardar" @click="saveConfig" />
         </q-card-actions>
@@ -75,9 +100,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
+import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityDraftPreview.vue'
 import { api } from 'src/services/api'
 
 const $q = useQuasar()
+const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const dialog = ref(false)
@@ -89,8 +117,24 @@ const structure = ref(null)
 const form = ref(emptyForm())
 
 const authoringOptions = [{ label: 'Formulario', value: 'form' }, { label: 'Custom', value: 'custom' }]
+const activityTypeOptions = [
+  { label: 'Trivia', value: 'trivia' },
+  { label: 'Emparejamiento', value: 'matching' },
+  { label: 'Crucigrama', value: 'crossword' },
+]
 const courseOptions = computed(() => courses.value.map((course) => ({ label: course.title, value: course.id })))
 const moduleOptions = computed(() => (structure.value?.modules || []).map((module) => ({ label: module.title, value: module.id })))
+const activityHint = computed(() => {
+  if (form.value.activity_type === 'matching') {
+    return '`matching` usa `pairs` con elementos `left/right`.'
+  }
+
+  if (form.value.activity_type === 'crossword') {
+    return '`crossword` usa `rows`, `cols` y `entries` con `row`, `col`, `direction`, `clue` y `answer`.'
+  }
+
+  return '`trivia` usa `questions` con `prompt`, `options` y `points`.'
+})
 const lessonOptions = computed(() => {
   if (!form.value.module_id) return []
   const module = (structure.value?.modules || []).find((item) => item.id === form.value.module_id)
@@ -105,7 +149,55 @@ function emptyForm() {
     activity_type: 'trivia',
     version: 1,
     is_active: true,
-    config_text: JSON.stringify({ title: 'Actividad', questions: [] }, null, 2),
+    config_text: JSON.stringify(defaultConfigFor('trivia'), null, 2),
+  }
+}
+
+function defaultConfigFor(activityType = 'trivia') {
+  if (activityType === 'matching') {
+    return {
+      title: 'Relaciona conceptos y definiciones',
+      description: 'Empareja cada concepto con su definición correcta.',
+      points_per_pair: 10,
+      pairs: [
+        { id: 1, left: 'API', right: 'Interfaz para comunicar sistemas' },
+        { id: 2, left: 'Frontend', right: 'Capa visual que usa el alumno' },
+        { id: 3, left: 'Backend', right: 'Lógica y datos del servidor' },
+      ],
+    }
+  }
+
+  if (activityType === 'crossword') {
+    return {
+      title: 'Crucigrama de conceptos base',
+      description: 'Completa el tablero usando las pistas horizontales y verticales.',
+      rows: 5,
+      cols: 6,
+      points_per_word: 10,
+      entries: [
+        { id: 1, row: 0, col: 0, direction: 'across', clue: 'Interfaz para comunicar sistemas', answer: 'API' },
+        { id: 2, row: 0, col: 0, direction: 'down', clue: 'Aplicación instalada en un dispositivo', answer: 'APP' },
+        { id: 3, row: 0, col: 2, direction: 'down', clue: 'Sigla corta de inteligencia artificial', answer: 'IA' },
+        { id: 4, row: 2, col: 3, direction: 'across', clue: 'Modelo de objetos del documento', answer: 'DOM' },
+        { id: 5, row: 2, col: 5, direction: 'down', clue: 'Función que asocia un valor a otro', answer: 'MAP' },
+        { id: 6, row: 4, col: 0, direction: 'across', clue: 'Aplicación web progresiva', answer: 'PWA' },
+      ],
+    }
+  }
+
+  return {
+    title: 'Actividad',
+    questions: [
+      {
+        id: 1,
+        prompt: 'Pregunta de ejemplo',
+        options: [
+          { id: 'a', text: 'Respuesta correcta', is_correct: true },
+          { id: 'b', text: 'Respuesta distractora', is_correct: false },
+        ],
+        points: 10,
+      },
+    ],
   }
 }
 
@@ -130,6 +222,20 @@ function syncLessons() {
   if (!lessonOptions.value.some((lesson) => lesson.value === form.value.lesson_id)) {
     form.value.lesson_id = null
   }
+}
+
+function previewLesson(lessonId) {
+  if (!lessonId) return
+  dialog.value = false
+  router.push({ name: 'teacher-lesson-preview', params: { lessonId } })
+}
+
+function previewConfig(config) {
+  previewLesson(config?.lesson_id || config?.lesson?.id)
+}
+
+function applyActivityTemplate() {
+  form.value.config_text = JSON.stringify(defaultConfigFor(form.value.activity_type || 'trivia'), null, 2)
 }
 
 async function loadCourses() {
@@ -207,8 +313,21 @@ async function saveConfig() {
     if (wasEditing) await api.put(`/interactive-configs/${editingConfig.value.id}`, payload)
     else await api.post('/interactive-configs', payload)
     await reloadPageData()
+    const previewLessonId = form.value.lesson_id
     closeDialog()
-    $q.notify({ type: 'positive', message: wasEditing ? 'Actividad actualizada correctamente.' : 'Actividad creada correctamente.' })
+    $q.notify({
+      type: 'positive',
+      message: wasEditing ? 'Actividad actualizada correctamente. Ya puedes previsualizarla.' : 'Actividad creada correctamente. Ya puedes previsualizarla.',
+      actions: previewLessonId
+        ? [
+            {
+              label: 'Previsualizar',
+              color: 'white',
+              handler: () => previewLesson(previewLessonId),
+            },
+          ]
+        : [],
+    })
   } catch (error) {
     $q.notify({ type: 'negative', message: formatError(error, 'No se pudo guardar la actividad.') })
   } finally {

@@ -131,10 +131,31 @@
 
               <div v-else-if="content.kind === 'interactive'" class="q-mt-md">
                 <activity-renderer
+                  :key="activityRenderKey"
                   :interactive-config="interactiveConfig"
                   :preview-mode="previewMode"
                   @completed="onInteractiveCompleted"
                 />
+
+                <q-banner
+                  v-if="previewMode && previewInteractiveResult"
+                  rounded
+                  class="bg-positive text-white q-mt-md"
+                >
+                  Vista previa finalizada. Puntaje simulado:
+                  {{ previewInteractiveResult.score }}/{{ previewInteractiveResult.max_score }}.
+                  <template #action>
+                    <q-btn flat color="white" no-caps label="Repetir actividad" @click="restartPreviewActivity" />
+                    <q-btn
+                      v-if="navigation.next_lesson"
+                      flat
+                      color="white"
+                      no-caps
+                      label="Siguiente lección"
+                      @click="openLesson(navigation.next_lesson.id)"
+                    />
+                  </template>
+                </q-banner>
               </div>
 
               <div v-else class="text-center q-py-lg text-grey-6">
@@ -225,6 +246,8 @@ const loading = ref(false)
 const errorMessage = ref('')
 const responseData = ref(null)
 const activeTab = ref('content')
+const activityRenderKey = ref(0)
+const previewInteractiveResult = ref(null)
 
 const lessonId = computed(() => Number(route.params.lessonId || props.initialLessonId))
 const lesson = computed(() => responseData.value?.lesson || {})
@@ -251,6 +274,8 @@ watch(
 async function loadLesson(id) {
   loading.value = true
   errorMessage.value = ''
+  previewInteractiveResult.value = null
+  activityRenderKey.value += 1
   try {
     const { data } = await api.get(`/lessons/${id}`, {
       params: props.previewMode ? { preview: 1 } : undefined,
@@ -264,6 +289,11 @@ async function loadLesson(id) {
   } finally {
     loading.value = false
   }
+}
+
+function restartPreviewActivity() {
+  previewInteractiveResult.value = null
+  activityRenderKey.value += 1
 }
 
 function openLesson(id) {
@@ -353,9 +383,14 @@ async function markLessonCompleted() {
 
 async function onInteractiveCompleted(result) {
   if (props.previewMode) {
+    if (previewInteractiveResult.value) return
+    previewInteractiveResult.value = {
+      score: Number(result?.score ?? 0),
+      max_score: Number(result?.max_score ?? 0),
+    }
     $q.notify({
       type: 'positive',
-      message: `Vista previa completada. Puntaje simulado: ${result?.score ?? 0}/${result?.max_score ?? 0}.`,
+      message: `Vista previa completada. Puntaje simulado: ${previewInteractiveResult.value.score}/${previewInteractiveResult.value.max_score}.`,
     })
     return
   }

@@ -87,7 +87,7 @@
         >
           <q-card
             class="course-card glass-card cursor-pointer"
-            @click="$router.push('/courses/' + course.slug)"
+            @click="openCourse(course)"
           >
             <div class="course-thumb">
               <div class="course-thumb-placeholder">
@@ -142,10 +142,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const courses = ref([])
 const loading = ref(true)
 const page = ref(1)
@@ -192,6 +193,17 @@ async function loadCourses() {
   } finally {
     loading.value = false
   }
+}
+
+function openCourse(course) {
+  if (!course?.slug) return
+
+  if (route.path.startsWith('/teacher/marketplace')) {
+    router.push({ name: 'teacher-marketplace-course', params: { slug: course.slug } })
+    return
+  }
+
+  router.push({ name: 'public-course-detail', params: { slug: course.slug } })
 }
 
 onMounted(async () => {
