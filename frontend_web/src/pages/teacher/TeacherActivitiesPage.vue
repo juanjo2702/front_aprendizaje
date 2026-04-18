@@ -36,7 +36,12 @@
           <div class="col-12 col-md-7">
             <div class="text-subtitle1 text-weight-bold">{{ config.lesson?.title || 'Lección sin nombre' }}</div>
             <div class="text-caption text-grey-5">{{ config.activity_type }} · {{ config.authoring_mode }} · v{{ config.version }}</div>
-            <div class="text-caption text-grey-6">{{ config.module?.title || 'Sin módulo' }}</div>
+            <div class="text-caption text-grey-6">
+              {{ config.module?.title || 'Sin módulo' }} · {{ config.max_attempts }} intentos · {{ config.passing_score }}% mínimo
+            </div>
+            <div class="text-caption text-grey-6">
+              Recompensa base: {{ config.xp_reward }} XP · {{ config.coin_reward }} monedas
+            </div>
           </div>
           <div class="col-12 col-md-5 row justify-end q-gutter-sm">
             <q-btn flat no-caps color="secondary" icon="visibility" label="Previsualizar" @click="previewConfig(config)" :disable="!config.lesson_id" />
@@ -77,6 +82,14 @@
                 :config-text="form.config_text"
               />
             </div>
+            <div class="col-12">
+              <TeacherActivitySettingsPanel
+                v-model:max-attempts="form.max_attempts"
+                v-model:passing-score="form.passing_score"
+                v-model:xp-reward="form.xp_reward"
+                v-model:coin-reward="form.coin_reward"
+              />
+            </div>
           </div>
         </q-card-section>
         <q-card-actions align="right">
@@ -102,6 +115,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityDraftPreview.vue'
+import TeacherActivitySettingsPanel from 'src/components/teacher/TeacherActivitySettingsPanel.vue'
 import { api } from 'src/services/api'
 
 const $q = useQuasar()
@@ -149,6 +163,10 @@ function emptyForm() {
     activity_type: 'trivia',
     version: 1,
     is_active: true,
+    max_attempts: 3,
+    passing_score: 70,
+    xp_reward: 100,
+    coin_reward: 25,
     config_text: JSON.stringify(defaultConfigFor('trivia'), null, 2),
   }
 }
@@ -282,6 +300,10 @@ function openDialog(config = null) {
       activity_type: config.activity_type || 'trivia',
       version: Number(config.version || 1),
       is_active: Boolean(config.is_active),
+      max_attempts: Number(config.max_attempts || 3),
+      passing_score: Number(config.passing_score || 70),
+      xp_reward: Number(config.xp_reward || 100),
+      coin_reward: Number(config.coin_reward || 25),
       config_text: JSON.stringify(config.config_payload || {}, null, 2),
     }
   } else {
@@ -305,6 +327,10 @@ async function saveConfig() {
       lesson_id: form.value.lesson_id,
       authoring_mode: form.value.authoring_mode,
       activity_type: form.value.activity_type?.trim() || 'trivia',
+      max_attempts: Number(form.value.max_attempts || 3),
+      passing_score: Number(form.value.passing_score || 70),
+      xp_reward: Number(form.value.xp_reward || 0),
+      coin_reward: Number(form.value.coin_reward || 0),
       config_payload: parseConfig(),
       is_active: Boolean(form.value.is_active),
       version: Number(form.value.version || 1),

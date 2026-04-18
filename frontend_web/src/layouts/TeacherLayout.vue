@@ -178,8 +178,20 @@ const navItems = [
   {
     name: 'teacher-gamification',
     label: 'Gamificación',
-    caption: 'Reglas, puntajes y juegos.',
+    caption: 'XP, monedas, intentos y umbrales.',
     icon: 'emoji_events',
+  },
+  {
+    name: 'teacher-students',
+    label: 'Mis alumnos',
+    caption: 'Seguimiento, alertas y drill-down.',
+    icon: 'groups',
+  },
+  {
+    name: 'teacher-gradebook',
+    label: 'Libreta',
+    caption: 'Intentos, notas y bloqueos por actividad.',
+    icon: 'fact_check',
   },
   {
     name: 'teacher-activities',

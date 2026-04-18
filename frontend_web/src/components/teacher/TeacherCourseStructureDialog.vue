@@ -172,11 +172,46 @@
               <div class="col-12 col-md-4 flex flex-center">
                 <q-toggle v-model="lessonForm.is_free" label="Vista libre" color="secondary" />
               </div>
-              <div class="col-12" v-if="['video','resource'].includes(lessonForm.type)">
-                <q-input v-model="lessonForm.content_url" label="URL del contenido" outlined dense />
+              <div class="col-12 col-md-4" v-if="['video','resource'].includes(lessonForm.type)">
+                <q-select
+                  v-model="lessonForm.source_mode"
+                  :options="sourceModeOptions"
+                  emit-value
+                  map-options
+                  label="Origen del archivo"
+                  outlined
+                  dense
+                />
               </div>
-              <div class="col-12 col-md-4" v-if="lessonForm.type === 'video'">
+              <div class="col-12 col-md-4" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'">
                 <q-input v-model="lessonForm.provider" label="Proveedor" outlined dense />
+              </div>
+              <div class="col-12" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'">
+                <q-input v-model="lessonForm.content_url" label="URL del video" outlined dense />
+              </div>
+              <div class="col-12" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'local'">
+                <VideoUploader
+                  v-model="lessonForm.video_upload_token"
+                  endpoint="/teacher/upload-video"
+                  :course-id="course?.id"
+                  label="Video local del curso"
+                  helper-text="Acepta MP4, WebM, MOV o playlists HLS. La carga se hace por partes."
+                  accept=".mp4,.webm,.mov,.m3u8,video/*"
+                />
+              </div>
+              <div class="col-12" v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'external'">
+                <q-input v-model="lessonForm.content_url" label="URL del recurso" outlined dense />
+              </div>
+              <div class="col-12" v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'local'">
+                <VideoUploader
+                  v-model="lessonForm.resource_upload_token"
+                  endpoint="/teacher/upload-resource"
+                  :course-id="course?.id"
+                  label="Adjuntar PDF, ZIP o documento"
+                  helper-text="Úsalo para guías, datasets, zips o material descargable pesado."
+                  accept=".pdf,.zip,.docx,application/pdf,application/zip"
+                  :max-bytes="536870912"
+                />
               </div>
               <div class="col-12" v-if="lessonForm.type === 'reading'">
                 <q-input
@@ -230,6 +265,14 @@
                     :config-text="lessonForm.interactive_config_text"
                   />
                 </div>
+                <div class="col-12">
+                  <TeacherActivitySettingsPanel
+                    v-model:max-attempts="lessonForm.max_attempts"
+                    v-model:passing-score="lessonForm.passing_score"
+                    v-model:xp-reward="lessonForm.xp_reward"
+                    v-model:coin-reward="lessonForm.coin_reward"
+                  />
+                </div>
               </template>
             </div>
           </q-card-section>
@@ -248,6 +291,8 @@ import { computed, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityDraftPreview.vue'
+import TeacherActivitySettingsPanel from 'src/components/teacher/TeacherActivitySettingsPanel.vue'
+import VideoUploader from 'src/components/teacher/VideoUploader.vue'
 import { api } from 'src/services/api'
 
 const props = defineProps({
@@ -275,6 +320,10 @@ const lessonTypeOptions = [
   { label: 'Lectura', value: 'reading' },
   { label: 'Recurso', value: 'resource' },
   { label: 'Interactivo', value: 'interactive' },
+]
+const sourceModeOptions = [
+  { label: 'Enlace externo', value: 'external' },
+  { label: 'Archivo local', value: 'local' },
 ]
 
 const activityTypeOptions = [
@@ -308,8 +357,15 @@ function emptyLesson() {
     is_free: false,
     content_url: '',
     content_text: '',
+    source_mode: 'external',
     provider: 'external',
+    video_upload_token: '',
+    resource_upload_token: '',
     activity_type: 'trivia',
+    max_attempts: 3,
+    passing_score: 70,
+    xp_reward: 100,
+    coin_reward: 25,
     interactive_config_text: JSON.stringify(defaultInteractiveConfig('trivia'), null, 2),
   }
 }
@@ -386,8 +442,17 @@ function formatDuration(seconds) {
 
 function lessonSummary(lesson) {
   if (lesson.type === 'reading') return lesson.content_text || lesson.contentable?.body_markdown || 'Lectura sin contenido.'
-  if (lesson.type === 'interactive') return lesson.interactiveConfig?.activity_type || lesson.contentable?.activity_type || 'Actividad interactiva.'
-  if (lesson.type === 'resource') return lesson.content_url || lesson.contentable?.file_url || 'Recurso sin URL.'
+  if (lesson.type === 'interactive') {
+    const config = lesson.interactiveConfig || lesson.contentable || {}
+    return `${config.activity_type || 'Actividad interactiva'} · ${config.max_attempts || 3} intentos · ${config.xp_reward || 0} XP · ${config.coin_reward || 0} monedas`
+  }
+  if (lesson.type === 'resource') {
+    if (lesson.contentable?.metadata?.upload_token) return 'Recurso local protegido adjunto.'
+    return lesson.content_url || lesson.contentable?.file_url || 'Recurso sin URL.'
+  }
+  if (lesson.contentable?.provider === 'local' || lesson.contentable?.metadata?.upload_token) {
+    return 'Video local protegido adjunto.'
+  }
   return lesson.content_url || lesson.contentable?.video_url || 'Video sin URL.'
 }
 
@@ -479,8 +544,15 @@ function openLessonDialog(module, lesson = null) {
         is_free: Boolean(lesson.is_free),
         content_url: lesson.content_url || lesson.contentable?.video_url || lesson.contentable?.file_url || '',
         content_text: lesson.content_text || lesson.contentable?.body_markdown || '',
+        source_mode: lesson.contentable?.provider === 'local' || lesson.contentable?.metadata?.upload_token ? 'local' : 'external',
         provider: lesson.contentable?.provider || 'external',
+        video_upload_token: '',
+        resource_upload_token: '',
         activity_type: activityType,
+        max_attempts: Number(lesson.interactiveConfig?.max_attempts || lesson.contentable?.max_attempts || 3),
+        passing_score: Number(lesson.interactiveConfig?.passing_score || lesson.contentable?.passing_score || 70),
+        xp_reward: Number(lesson.interactiveConfig?.xp_reward || lesson.contentable?.xp_reward || 100),
+        coin_reward: Number(lesson.interactiveConfig?.coin_reward || lesson.contentable?.coin_reward || 25),
         interactive_config_text: JSON.stringify(interactiveConfig, null, 2),
       }
     : {
@@ -516,10 +588,28 @@ function serializeLessonPayload() {
     is_free: Boolean(lessonForm.value.is_free),
   }
   if (['video', 'resource'].includes(lessonForm.value.type)) payload.content_url = lessonForm.value.content_url?.trim() || null
-  if (lessonForm.value.type === 'video') payload.provider = lessonForm.value.provider?.trim() || 'external'
+  if (lessonForm.value.type === 'video') {
+    if (lessonForm.value.source_mode === 'local' && !lessonForm.value.video_upload_token && !lessonForm.value.content_url) {
+      throw new Error('Debes subir un video local antes de guardar la lección.')
+    }
+    payload.provider = lessonForm.value.source_mode === 'local'
+      ? 'local'
+      : lessonForm.value.provider?.trim() || 'external'
+    payload.video_upload_token = lessonForm.value.source_mode === 'local' ? lessonForm.value.video_upload_token || null : null
+  }
+  if (lessonForm.value.type === 'resource') {
+    if (lessonForm.value.source_mode === 'local' && !lessonForm.value.resource_upload_token && !lessonForm.value.content_url) {
+      throw new Error('Debes adjuntar un archivo antes de guardar el recurso.')
+    }
+    payload.resource_upload_token = lessonForm.value.source_mode === 'local' ? lessonForm.value.resource_upload_token || null : null
+  }
   if (lessonForm.value.type === 'reading') payload.content_text = lessonForm.value.content_text?.trim() || ''
   if (lessonForm.value.type === 'interactive') {
     payload.activity_type = lessonForm.value.activity_type?.trim() || 'trivia'
+    payload.max_attempts = Number(lessonForm.value.max_attempts || 3)
+    payload.passing_score = Number(lessonForm.value.passing_score || 70)
+    payload.xp_reward = Number(lessonForm.value.xp_reward || 0)
+    payload.coin_reward = Number(lessonForm.value.coin_reward || 0)
     payload.interactive_config_payload = parseJsonText(lessonForm.value.interactive_config_text)
   }
   return payload

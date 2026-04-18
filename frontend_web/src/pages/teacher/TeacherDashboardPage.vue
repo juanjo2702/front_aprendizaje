@@ -133,6 +133,16 @@
               @action="router.push({ name: 'teacher-gamification' })"
             />
           </div>
+          <div class="col-12 col-lg-4">
+            <TeacherQuickActionCard
+              icon="groups"
+              title="Mis alumnos"
+              description="Tabla operativa con progreso, promedio y drill-down por curso."
+              action-label="Abrir seguimiento"
+              :badge="String(alertSummary.open_questions || 0)"
+              @action="router.push({ name: 'teacher-students' })"
+            />
+          </div>
         </section>
 
         <section class="row q-col-gutter-md q-mb-lg">
@@ -151,6 +161,32 @@
               :items="structureItems"
               @action="openCourseManager"
             />
+          </div>
+          <div class="col-12 col-xl-6">
+            <q-card class="recent-course-card q-pa-lg">
+              <div class="row items-center justify-between q-mb-md">
+                <div>
+                  <div class="text-subtitle1 text-weight-bold">Alertas docentes</div>
+                  <div class="text-caption text-grey-5">Preguntas abiertas y alumnos en seguimiento.</div>
+                </div>
+                <q-btn flat no-caps color="secondary" label="Ver seguimiento" :to="{ name: 'teacher-students' }" />
+              </div>
+
+              <q-list v-if="recentAlerts.length" separator dark>
+                <q-item v-for="(alert, index) in recentAlerts" :key="`${alert.type}-${index}`">
+                  <q-item-section avatar>
+                    <q-avatar :color="alert.type === 'question' ? 'secondary' : 'negative'" text-color="white">
+                      <q-icon :name="alert.type === 'question' ? 'forum' : 'warning'" />
+                    </q-avatar>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ alert.student_name || 'Alumno' }}</q-item-label>
+                    <q-item-label caption>{{ describeAlert(alert) }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+              <div v-else class="text-grey-5">No hay alertas activas por ahora.</div>
+            </q-card>
           </div>
         </section>
 
@@ -241,6 +277,8 @@ const loading = ref(true)
 const courses = ref([])
 const interactiveConfigs = ref([])
 const gameRules = ref([])
+const recentAlerts = ref([])
+const alertSummary = ref({})
 
 const greetingTitle = computed(() => {
   const name = auth.user?.name?.split(' ')[0] || 'Docente'
@@ -350,18 +388,26 @@ function openCourseManager() {
   router.push({ name: 'teacher-courses' })
 }
 
+function describeAlert(alert) {
+  if (alert.type === 'question') return alert.message
+  return `${alert.course_title} · ${alert.failed_activities_count || 0} fallos · ${alert.days_inactive || 0} días sin entrar`
+}
+
 async function loadDashboard() {
   loading.value = true
   try {
-    const [coursesResponse, interactiveResponse, rulesResponse] = await Promise.all([
+    const [coursesResponse, interactiveResponse, rulesResponse, alertsResponse] = await Promise.all([
       api.get('/instructor/courses', { params: { per_page: 100 } }),
       api.get('/interactive-configs', { params: { per_page: 100 } }),
       api.get('/game-configurations', { params: { per_page: 100 } }),
+      api.get('/instructor/alerts'),
     ])
 
     courses.value = coursesResponse.data?.data || []
     interactiveConfigs.value = interactiveResponse.data?.data || []
     gameRules.value = rulesResponse.data?.data || []
+    recentAlerts.value = alertsResponse.data?.alerts || []
+    alertSummary.value = alertsResponse.data?.summary || {}
   } catch (error) {
     $q.notify({
       type: 'negative',
