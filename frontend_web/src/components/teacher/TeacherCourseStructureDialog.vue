@@ -641,7 +641,6 @@ function confirmAction(message) {
     $q.dialog({
       title: 'Confirmar acción',
       message,
-      cancel: true,
       persistent: true,
       ok: { color: 'primary', label: 'Aceptar' },
       cancel: { color: 'grey-5', label: 'Cancelar', flat: true },

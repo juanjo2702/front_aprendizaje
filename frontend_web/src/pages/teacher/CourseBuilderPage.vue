@@ -2,8 +2,8 @@
   <q-page class="q-pa-xl page-wrap">
     <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
       <div class="col-12 col-md">
-        <h2 class="q-mb-xs">Course Builder</h2>
-        <p class="q-mb-none">Administra cursos, módulos y lecciones del docente autenticado.</p>
+        <h2 class="q-mb-xs">Course Builder 2.0</h2>
+        <p class="q-mb-none">Gestiona cursos con jerarquía explícita: Curso > Módulo > Lección.</p>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
         <q-btn outline no-caps color="secondary" icon="science" label="Crear demo" :loading="creatingDemo" @click="createDemoCourse" />
@@ -12,13 +12,14 @@
     </div>
 
     <q-banner class="bg-primary text-white q-mb-md" rounded>
-      CRUD real de cursos y estructura del curso conectado a API.
+      Primero creas un <strong>Curso</strong>. Luego agregas <strong>Módulos</strong>. Dentro de cada módulo creas
+      <strong>Lecciones</strong> de tipo video, documento o actividad gamificada.
     </q-banner>
 
     <div class="row q-col-gutter-md q-mb-lg">
       <div class="col-12 col-sm-4"><q-card class="glass-card q-pa-md"><div class="text-caption text-grey-5">Cursos</div><div class="text-h4 text-weight-bold">{{ courses.length }}</div></q-card></div>
       <div class="col-12 col-sm-4"><q-card class="glass-card q-pa-md"><div class="text-caption text-grey-5">Publicados</div><div class="text-h4 text-weight-bold text-positive">{{ publishedCount }}</div></q-card></div>
-      <div class="col-12 col-sm-4"><q-card class="glass-card q-pa-md"><div class="text-caption text-grey-5">Borradores</div><div class="text-h4 text-weight-bold text-warning">{{ draftCount }}</div></q-card></div>
+      <div class="col-12 col-sm-4"><q-card class="glass-card q-pa-md"><div class="text-caption text-grey-5">Draft + revisión</div><div class="text-h4 text-weight-bold text-warning">{{ draftCount }}</div></q-card></div>
     </div>
 
     <q-card class="glass-card q-pa-md q-mb-lg">
@@ -61,11 +62,20 @@
             <div class="text-caption">Módulos: {{ course.modules_count || 0 }}</div>
             <div class="text-caption">Lecciones: {{ course.lessons_count || 0 }}</div>
             <div class="text-caption">Estudiantes: {{ course.total_students || 0 }}</div>
+            <div class="text-caption">Activos 7d: {{ course.active_students || 0 }}</div>
           </div>
           <div class="col-12 col-md-3">
             <div class="column q-gutter-sm">
               <q-btn flat no-caps color="primary" icon="edit" label="Editar curso" @click="openEditDialog(course)" />
-              <q-btn flat no-caps color="deep-purple-3" icon="account_tree" label="Editar estructura" @click="openStructureDialog(course)" />
+              <q-btn flat no-caps color="deep-purple-3" icon="account_tree" label="Abrir Builder 2.0" @click="openBuilder(course)" />
+              <q-btn
+                flat
+                no-caps
+                :color="course.status === 'published' ? 'warning' : (course.status === 'pending' ? 'secondary' : 'positive')"
+                :icon="course.status === 'published' ? 'edit_off' : (course.status === 'pending' ? 'schedule_send' : 'publish')"
+                :label="statusActionLabel(course)"
+                @click="toggleCourseStatus(course)"
+              />
               <div class="row justify-end q-gutter-sm">
                 <q-btn flat round color="secondary" icon="visibility" @click="previewCourse(course)" />
                 <q-btn flat round color="negative" icon="delete" @click="confirmDelete(course)" />
@@ -86,12 +96,6 @@
       @save="saveCourse"
     />
 
-    <TeacherCourseStructureDialog
-      v-model="structureDialog"
-      :course="structureCourse"
-      @changed="loadCourses"
-    />
-
     <q-dialog v-model="deleteDialog" persistent>
       <q-card style="min-width:360px">
         <q-card-section><div class="text-h6">Eliminar curso</div><div class="q-mt-sm">¿Seguro que quieres eliminar <strong>{{ selectedCourse?.title }}</strong>?</div></q-card-section>
@@ -110,7 +114,6 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from 'src/services/api'
 import TeacherCourseDialog from 'src/components/teacher/TeacherCourseDialog.vue'
-import TeacherCourseStructureDialog from 'src/components/teacher/TeacherCourseStructureDialog.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -120,15 +123,17 @@ const deleting = ref(false)
 const creatingDemo = ref(false)
 const courseDialog = ref(false)
 const deleteDialog = ref(false)
-const structureDialog = ref(false)
 const editingCourse = ref(null)
 const selectedCourse = ref(null)
-const structureCourse = ref(null)
 const courses = ref([])
 const categoryOptions = ref([])
 const filters = ref({ search: '', status: null })
 const levelOptions = [{ label: 'Principiante', value: 'beginner' }, { label: 'Intermedio', value: 'intermediate' }, { label: 'Avanzado', value: 'advanced' }, { label: 'Todos los niveles', value: 'all_levels' }]
-const statusOptions = [{ label: 'Borrador', value: 'draft' }, { label: 'Pendiente', value: 'pending' }, { label: 'Publicado', value: 'published' }, { label: 'Archivado', value: 'archived' }]
+const statusOptions = [
+  { label: 'Borrador', value: 'draft' },
+  { label: 'Pendiente de revisión', value: 'pending' },
+  { label: 'Publicado', value: 'published' },
+]
 
 const filteredCourses = computed(() => {
   const search = filters.value.search.trim().toLowerCase()
@@ -253,7 +258,7 @@ async function createDemoCourse() {
     await loadCourses()
     const createdCourse = courses.value.find((course) => course.id === data.id) || data
     $q.notify({ type: 'positive', message: `Se creó "${createdCourse.title}" como curso demo editable.` })
-    openStructureDialog(createdCourse)
+    openBuilder(createdCourse)
   } catch (error) {
     $q.notify({ type: 'negative', message: formatError(error, 'No se pudo crear el curso demo.') })
   } finally {
@@ -287,9 +292,40 @@ function previewCourse(course) {
   router.push({ name: 'teacher-course-preview', params: { slug: course.slug } })
 }
 
-function openStructureDialog(course) {
-  structureCourse.value = course
-  structureDialog.value = true
+function openBuilder(course) {
+  router.push({
+    name: 'teacher-course-builder',
+    params: { courseId: course.id },
+    query: { courseTitle: course.title },
+  })
+}
+
+async function toggleCourseStatus(course) {
+  const nextStatus = course.status === 'published'
+    ? 'draft'
+    : (course.status === 'pending' ? 'draft' : 'pending')
+
+  try {
+    await api.put(`/courses/${course.id}/status`, { status: nextStatus })
+    await loadCourses()
+    $q.notify({
+      type: 'positive',
+      message: nextStatus === 'pending'
+        ? `Curso "${course.title}" enviado a revisión.`
+        : `Curso "${course.title}" devuelto a borrador.`,
+    })
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: formatError(error, 'No se pudo actualizar el estado del curso.'),
+    })
+  }
+}
+
+function statusActionLabel(course) {
+  if (course.status === 'published') return 'Pasar a borrador'
+  if (course.status === 'pending') return 'Retirar de revisión'
+  return 'Enviar a revisión'
 }
 
 onMounted(async () => {
@@ -304,12 +340,6 @@ onMounted(async () => {
 watch(courseDialog, (open) => {
   if (!open && !saving.value) {
     editingCourse.value = null
-  }
-})
-
-watch(structureDialog, (open) => {
-  if (!open) {
-    structureCourse.value = null
   }
 })
 </script>

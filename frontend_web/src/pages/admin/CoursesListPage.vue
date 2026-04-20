@@ -1,372 +1,232 @@
 <template>
-  <q-page class="q-pa-lg">
-    <!-- Header y acciones -->
-    <div class="row items-center q-mb-lg">
-      <div class="col">
-        <div class="text-h4 text-weight-bold">Gestión de Cursos</div>
-        <div class="text-subtitle1 text-grey-7">
-          Administra todos los cursos de la plataforma
+  <q-page class="admin-page q-pa-xl">
+    <div class="page-wrap">
+      <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
+        <div class="col-12 col-lg">
+          <h2 class="q-mb-xs">Bandeja de revisión de cursos</h2>
+          <p class="q-mb-none text-grey-5">
+            El administrador decide qué pasa de borrador o pendiente a publicado, y puede inspeccionar el player antes
+            de aprobar.
+          </p>
+        </div>
+        <div class="col-12 col-lg-auto row q-gutter-sm">
+          <q-btn flat no-caps color="secondary" icon="refresh" label="Recargar" :loading="loading" @click="loadCourses" />
         </div>
       </div>
-      <div class="col-auto">
-        <q-btn
-          color="primary"
-          icon="add_circle"
-          label="Nuevo curso"
-          :to="{ name: 'admin-courses-create' }"
-        />
-        <q-btn
-          outline
-          color="primary"
-          icon="filter_list"
-          label="Filtros"
-          class="q-ml-sm"
-          @click="showFilters = !showFilters"
-        />
+
+      <div class="row q-col-gutter-md q-mb-lg">
+        <div class="col-12 col-sm-4">
+          <q-card class="summary-card q-pa-md">
+            <div class="text-caption text-grey-5">Pendientes</div>
+            <div class="text-h4 text-weight-bold text-warning">{{ pendingCount }}</div>
+          </q-card>
+        </div>
+        <div class="col-12 col-sm-4">
+          <q-card class="summary-card q-pa-md">
+            <div class="text-caption text-grey-5">Publicados</div>
+            <div class="text-h4 text-weight-bold text-positive">{{ publishedCount }}</div>
+          </q-card>
+        </div>
+        <div class="col-12 col-sm-4">
+          <q-card class="summary-card q-pa-md">
+            <div class="text-caption text-grey-5">Borradores</div>
+            <div class="text-h4 text-weight-bold text-secondary">{{ draftCount }}</div>
+          </q-card>
+        </div>
       </div>
-    </div>
 
-    <!-- Filtros -->
-    <q-slide-transition>
-      <div v-show="showFilters" class="q-mb-lg">
-        <q-card class="q-pa-md">
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-sm-6 col-md-4">
-              <q-input
-                v-model="filters.search"
-                label="Buscar cursos"
-                outlined
-                dense
-                clearable
-              >
-                <template #prepend>
-                  <q-icon name="search" />
-                </template>
-              </q-input>
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select
-                v-model="filters.status"
-                :options="statusOptions"
-                label="Estado"
-                outlined
-                dense
-                clearable
-                emit-value
-                map-options
-              />
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select
-                v-model="filters.category"
-                :options="categoryOptions"
-                label="Categoría"
-                outlined
-                dense
-                clearable
-                emit-value
-                map-options
-              />
-            </div>
-            <div class="col-12 col-sm-6 col-md-2">
-              <div class="row q-col-gutter-xs">
-                <div class="col">
-                  <q-btn
-                    color="primary"
-                    label="Aplicar"
-                    @click="applyFilters"
-                    class="full-width"
-                  />
-                </div>
-                <div class="col">
-                  <q-btn
-                    outline
-                    label="Limpiar"
-                    @click="clearFilters"
-                    class="full-width"
-                  />
-                </div>
-              </div>
-            </div>
+      <q-card class="panel-card q-pa-md q-mb-lg">
+        <div class="row q-col-gutter-md items-end">
+          <div class="col-12 col-md-5">
+            <q-input v-model="filters.search" outlined dense clearable label="Buscar curso o docente">
+              <template #prepend><q-icon name="search" /></template>
+            </q-input>
           </div>
-        </q-card>
-      </div>
-    </q-slide-transition>
-
-    <!-- Tabla de cursos -->
-    <q-card>
-      <q-card-section class="q-pa-none">
-        <q-table
-          :rows="courses"
-          :columns="columns"
-          row-key="id"
-          :loading="loading"
-          :pagination="pagination"
-          @request="onRequest"
-          flat
-          bordered
-        >
-          <!-- Imagen del curso -->
-          <template #body-cell-image="props">
-            <q-td :props="props">
-              <q-avatar size="60px" square v-if="props.row.image_url">
-                <img :src="props.row.image_url" />
-              </q-avatar>
-              <q-avatar size="60px" square color="primary" text-color="white" v-else>
-                <q-icon name="school" size="28px" />
-              </q-avatar>
-            </q-td>
-          </template>
-
-          <!-- Título y descripción -->
-          <template #body-cell-title="props">
-            <q-td :props="props">
-              <div class="text-weight-medium">{{ props.row.title }}</div>
-              <div class="text-caption text-grey-7 line-clamp-2">
-                {{ props.row.description }}
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Instructor -->
-          <template #body-cell-instructor="props">
-            <q-td :props="props">
-              <div v-if="props.row.instructor">
-                <div class="text-weight-medium">{{ props.row.instructor.name }}</div>
-                <div class="text-caption text-grey-7">{{ props.row.instructor.email }}</div>
-              </div>
-              <div v-else class="text-grey-7">-</div>
-            </q-td>
-          </template>
-
-          <!-- Estado -->
-          <template #body-cell-status="props">
-            <q-td :props="props">
-              <q-badge :color="props.row.is_published ? 'positive' : 'warning'" rounded>
-                {{ props.row.is_published ? 'Publicado' : 'Borrador' }}
-              </q-badge>
-            </q-td>
-          </template>
-
-          <!-- Precio -->
-          <template #body-cell-price="props">
-            <q-td :props="props">
-              <div v-if="props.row.price > 0" class="text-weight-medium">
-                {{ formatCurrency(props.row.price) }}
-              </div>
-              <q-badge v-else color="info" rounded>Gratis</q-badge>
-            </q-td>
-          </template>
-
-          <!-- Inscripciones -->
-          <template #body-cell-enrollments="props">
-            <q-td :props="props">
-              <q-badge color="primary" rounded>
-                {{ props.row.enrollments_count || 0 }}
-              </q-badge>
-            </q-td>
-          </template>
-
-          <!-- Acciones -->
-          <template #body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn
-                flat
-                dense
-                round
-                icon="visibility"
-                size="sm"
-                @click="viewCourse(props.row)"
-              />
-              <q-btn
-                flat
-                dense
-                round
-                icon="edit"
-                size="sm"
-                class="q-ml-xs"
-                @click="editCourse(props.row)"
-              />
-              <q-btn
-                flat
-                dense
-                round
-                icon="delete"
-                size="sm"
-                color="negative"
-                class="q-ml-xs"
-                @click="confirmDelete(props.row)"
-              />
-            </q-td>
-          </template>
-        </q-table>
-      </q-card-section>
-    </q-card>
-
-    <!-- Diálogo de confirmación de eliminación -->
-    <q-dialog v-model="deleteDialog" persistent>
-      <q-card style="min-width: 350px">
-        <q-card-section>
-          <div class="text-h6">Eliminar curso</div>
-          <div class="text-subtitle2 q-mt-sm">
-            ¿Estás seguro de eliminar el curso <strong>{{ selectedCourse?.title }}</strong>?
-            Esta acción no se puede deshacer y afectará a todos los usuarios inscritos.
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filters.status"
+              :options="statusOptions"
+              outlined
+              dense
+              clearable
+              emit-value
+              map-options
+              label="Estado"
+            />
           </div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-          <q-btn flat label="Eliminar" color="negative" @click="deleteCourse" v-close-popup />
-        </q-card-actions>
+          <div class="col-12 col-md-4 row justify-end q-gutter-sm">
+            <q-btn flat no-caps color="grey-5" label="Limpiar" @click="resetFilters" />
+            <q-btn color="primary" no-caps label="Aplicar" @click="loadCourses" />
+          </div>
+        </div>
       </q-card>
-    </q-dialog>
+
+      <q-card class="panel-card">
+        <q-card-section class="q-pa-none">
+          <q-table
+            :rows="courses"
+            :columns="columns"
+            row-key="id"
+            flat
+            dark
+            :loading="loading"
+            :pagination="{ rowsPerPage: 15 }"
+          >
+            <template #body-cell-title="props">
+              <q-td :props="props">
+                <div class="text-weight-medium">{{ props.row.title }}</div>
+                <div class="text-caption text-grey-5">{{ props.row.category?.name || 'Sin categoría' }}</div>
+              </q-td>
+            </template>
+
+            <template #body-cell-instructor="props">
+              <q-td :props="props">
+                <div class="text-weight-medium">{{ props.row.instructor?.name || 'Sin docente' }}</div>
+                <div class="text-caption text-grey-5">{{ props.row.instructor?.email || '-' }}</div>
+              </q-td>
+            </template>
+
+            <template #body-cell-status="props">
+              <q-td :props="props">
+                <q-badge :color="statusColor(props.row.status)" rounded>
+                  {{ statusLabel(props.row.status) }}
+                </q-badge>
+              </q-td>
+            </template>
+
+            <template #body-cell-structure="props">
+              <q-td :props="props">
+                <div class="text-caption">{{ props.row.modules_count || 0 }} módulos</div>
+                <div class="text-caption text-grey-5">{{ props.row.lessons_count || 0 }} lecciones</div>
+              </q-td>
+            </template>
+
+            <template #body-cell-actions="props">
+              <q-td :props="props">
+                <div class="row justify-end q-gutter-xs">
+                  <q-btn flat round color="primary" icon="assignment_turned_in" @click="openReview(props.row)" />
+                  <q-btn flat round color="secondary" icon="visibility" @click="previewCourse(props.row)" />
+                  <q-btn flat round color="negative" icon="delete" @click="confirmDelete(props.row)" />
+                </div>
+              </q-td>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+
+      <q-dialog v-model="deleteDialog" persistent>
+        <q-card style="min-width: 360px">
+          <q-card-section>
+            <div class="text-h6">Eliminar curso</div>
+            <div class="q-mt-sm">
+              ¿Seguro que deseas eliminar <strong>{{ selectedCourse?.title }}</strong> de la plataforma?
+            </div>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat no-caps label="Cancelar" color="grey-5" v-close-popup />
+            <q-btn color="negative" no-caps label="Eliminar" :loading="deleting" @click="deleteCourse" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from 'src/services/api'
 
 const $q = useQuasar()
+const router = useRouter()
 
 const loading = ref(false)
-const showFilters = ref(false)
+const deleting = ref(false)
 const deleteDialog = ref(false)
 const selectedCourse = ref(null)
-
 const courses = ref([])
 const filters = ref({
   search: '',
-  status: '',
-  category: ''
-})
-
-const pagination = ref({
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0
+  status: null,
 })
 
 const statusOptions = [
-  { label: 'Publicados', value: 'published' },
-  { label: 'Borradores', value: 'draft' }
+  { label: 'Pendiente', value: 'pending' },
+  { label: 'Borrador', value: 'draft' },
+  { label: 'Publicado', value: 'published' },
 ]
-
-const categoryOptions = ref([])
 
 const columns = [
-  { name: 'image', label: '', field: 'image_url', align: 'center', style: 'width: 70px' },
-  { name: 'title', label: 'Curso', field: 'title', align: 'left', sortable: true },
-  { name: 'instructor', label: 'Instructor', field: row => row.instructor?.name, align: 'left' },
-  { name: 'status', label: 'Estado', field: 'is_published', align: 'center' },
-  { name: 'price', label: 'Precio', field: 'price', align: 'center', sortable: true },
-  { name: 'enrollments', label: 'Inscripciones', field: 'enrollments_count', align: 'center', sortable: true },
-  { name: 'rating', label: 'Rating', field: 'average_rating', align: 'center', sortable: true, format: (val) => val ? val.toFixed(1) : '-' },
-  { name: 'created_at', label: 'Creado', field: 'created_at', align: 'center', sortable: true, format: (val) => formatDate(val) },
-  { name: 'actions', label: 'Acciones', align: 'center', style: 'width: 120px' }
+  { name: 'title', label: 'Curso', field: 'title', align: 'left' },
+  { name: 'instructor', label: 'Docente', field: 'instructor', align: 'left' },
+  { name: 'status', label: 'Estado', field: 'status', align: 'center' },
+  { name: 'structure', label: 'Estructura', field: 'modules_count', align: 'center' },
+  { name: 'total_students', label: 'Estudiantes', field: 'total_students', align: 'center' },
+  { name: 'created_at', label: 'Creado', field: (row) => formatDate(row.created_at), align: 'center' },
+  { name: 'actions', label: 'Acciones', align: 'right' },
 ]
 
-function formatDate(dateString) {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('es-ES', {
+const pendingCount = computed(() => courses.value.filter((course) => course.status === 'pending').length)
+const publishedCount = computed(() => courses.value.filter((course) => course.status === 'published').length)
+const draftCount = computed(() => courses.value.filter((course) => course.status === 'draft').length)
+
+function statusLabel(status) {
+  return ({ draft: 'Borrador', pending: 'Pendiente', published: 'Publicado' }[status] || status)
+}
+
+function statusColor(status) {
+  return ({ draft: 'secondary', pending: 'warning', published: 'positive' }[status] || 'grey-6')
+}
+
+function formatDate(date) {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('es-BO', {
     day: '2-digit',
-    month: 'short'
+    month: 'short',
+    year: 'numeric',
   })
 }
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount)
+function resetFilters() {
+  filters.value = {
+    search: '',
+    status: null,
+  }
+  loadCourses()
 }
 
 async function loadCourses() {
+  loading.value = true
   try {
-    loading.value = true
-    
-    // TODO: Implementar endpoint real para listar cursos admin
-    // Por ahora usamos datos mock
-    courses.value = [
-      { id: 1, title: 'Introducción a JavaScript', description: 'Aprende JavaScript desde cero', instructor: { id: 2, name: 'María López', email: 'maria@example.com' }, image_url: null, is_published: true, price: 49.99, enrollments_count: 245, average_rating: 4.8, created_at: '2024-01-15' },
-      { id: 2, title: 'Diseño UI/UX', description: 'Principios de diseño de interfaces', instructor: { id: 3, name: 'Carlos Ruiz', email: 'carlos@example.com' }, image_url: null, is_published: true, price: 59.99, enrollments_count: 189, average_rating: 4.7, created_at: '2024-02-10' },
-      { id: 3, title: 'React Avanzado', description: 'Patrones avanzados de React', instructor: { id: 4, name: 'Ana García', email: 'ana@example.com' }, image_url: null, is_published: true, price: 79.99, enrollments_count: 156, average_rating: 4.9, created_at: '2024-02-25' },
-      { id: 4, title: 'Node.js Backend', description: 'Construye APIs con Node.js', instructor: { id: 5, name: 'Pedro Martínez', email: 'pedro@example.com' }, image_url: null, is_published: false, price: 69.99, enrollments_count: 0, average_rating: null, created_at: '2024-03-05' },
-      { id: 5, title: 'Base de Datos SQL', description: 'Dominia SQL y diseño de bases de datos', instructor: { id: 2, name: 'María López', email: 'maria@example.com' }, image_url: null, is_published: true, price: 49.99, enrollments_count: 98, average_rating: 4.5, created_at: '2024-03-12' },
-      { id: 6, title: 'Python para Ciencia de Datos', description: 'Análisis de datos con Python', instructor: { id: 3, name: 'Carlos Ruiz', email: 'carlos@example.com' }, image_url: null, is_published: true, price: 89.99, enrollments_count: 123, average_rating: 4.6, created_at: '2024-03-18' },
-      { id: 7, title: 'Flutter Desarrollo Móvil', description: 'Crea apps móviles con Flutter', instructor: { id: 4, name: 'Ana García', email: 'ana@example.com' }, image_url: null, is_published: false, price: 74.99, enrollments_count: 0, average_rating: null, created_at: '2024-03-20' },
-      { id: 8, title: 'DevOps Fundamentals', description: 'Introducción a prácticas DevOps', instructor: { id: 5, name: 'Pedro Martínez', email: 'pedro@example.com' }, image_url: null, is_published: true, price: 99.99, enrollments_count: 67, average_rating: 4.7, created_at: '2024-03-22' }
-    ]
-    
-    pagination.value.rowsNumber = courses.value.length
-    
-    // Cargar categorías para filtros
-    try {
-      const categoriesRes = await api.get('/categories')
-      categoryOptions.value = categoriesRes.data.map(cat => ({
-        label: cat.name,
-        value: cat.id
-      }))
-    } catch (error) {
-      console.log('No se pudieron cargar categorías:', error.message)
-    }
-    
-    // Intento cargar datos reales
-    // try {
-    //   const response = await api.get('/admin/courses', { params: { ...filters.value, ...pagination.value } })
-    //   courses.value = response.data.data
-    //   pagination.value = response.data.meta
-    // } catch (error) {
-    //   console.log('Usando datos mock para cursos:', error.message)
-    // }
-  } catch (error) {
-    console.error('Error cargando cursos:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error cargando la lista de cursos'
-    })
+    const params = {}
+    if (filters.value.search) params.search = filters.value.search
+    if (filters.value.status) params.status = filters.value.status
+
+    const { data } = await api.get('/admin/courses/review-inbox', { params })
+    courses.value = data.data || []
   } finally {
     loading.value = false
   }
 }
 
-function applyFilters() {
-  pagination.value.page = 1
-  loadCourses()
-}
-
-function clearFilters() {
-  filters.value = {
-    search: '',
-    status: '',
-    category: ''
-  }
-  applyFilters()
-}
-
-function onRequest(props) {
-  const { page, rowsPerPage } = props.pagination
-  pagination.value.page = page
-  pagination.value.rowsPerPage = rowsPerPage
-  loadCourses()
-}
-
-function viewCourse(course) {
-  $q.notify({
-    message: `Ver curso: ${course.title}`,
-    color: 'info'
+function openReview(course) {
+  router.push({
+    name: 'admin-course-review',
+    params: { courseId: course.id },
+    query: { courseTitle: course.title },
   })
-  // Redirigir a detalle del curso
-  // router.push(`/admin/courses/${course.id}`)
 }
 
-function editCourse(course) {
-  $q.notify({
-    message: `Editar curso: ${course.title}`,
-    color: 'warning'
+function previewCourse(course) {
+  router.push({
+    name: 'admin-course-preview',
+    params: { slug: course.slug },
+    query: {
+      courseId: String(course.id),
+      courseTitle: course.title,
+    },
   })
-  // Redirigir a edición
-  // router.push(`/admin/courses/${course.id}/edit`)
 }
 
 function confirmDelete(course) {
@@ -376,38 +236,38 @@ function confirmDelete(course) {
 
 async function deleteCourse() {
   if (!selectedCourse.value) return
-  
+  deleting.value = true
   try {
-    // TODO: Implementar eliminación real
-    // await api.delete(`/admin/courses/${selectedCourse.value.id}`)
-    
+    await api.delete(`/admin/courses/${selectedCourse.value.id}`)
     $q.notify({
       type: 'positive',
-      message: `Curso "${selectedCourse.value.title}" eliminado correctamente`
+      message: `Curso "${selectedCourse.value.title}" eliminado correctamente.`,
     })
-    
-    // Recargar lista
-    loadCourses()
-  } catch (error) {
-    console.error('Error eliminando curso:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Error eliminando el curso'
-    })
+    deleteDialog.value = false
+    selectedCourse.value = null
+    await loadCourses()
+  } finally {
+    deleting.value = false
   }
 }
 
-onMounted(() => {
-  loadCourses()
-})
+onMounted(loadCourses)
 </script>
 
-<style lang="scss" scoped>
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+<style scoped lang="scss">
+.admin-page {
+  background: transparent;
+}
+
+.page-wrap {
+  max-width: 1340px;
+  margin: 0 auto;
+}
+
+.summary-card,
+.panel-card {
+  border-radius: 24px;
+  background: rgba(8, 18, 36, 0.88);
+  border: 1px solid rgba(93, 122, 255, 0.16);
 }
 </style>

@@ -139,7 +139,28 @@
     </q-drawer>
 
     <q-page-container class="teacher-page-container">
-      <router-view />
+      <div class="teacher-page-shell">
+        <section class="teacher-crumb-bar q-px-lg q-py-md">
+          <div class="row items-center justify-between q-col-gutter-md">
+            <div class="col-12 col-lg-auto row items-center q-gutter-sm">
+              <TeacherBackButton v-if="showBackButton" />
+              <q-breadcrumbs class="text-grey-5">
+                <q-breadcrumbs-el
+                  v-for="(crumb, index) in teacherBreadcrumbs"
+                  :key="`${crumb.label}-${index}`"
+                  :label="crumb.label"
+                  :to="crumb.to"
+                />
+              </q-breadcrumbs>
+            </div>
+            <div class="col-12 col-lg-auto text-subtitle1 text-weight-bold text-grey-2">
+              {{ currentTeacherTitle }}
+            </div>
+          </div>
+        </section>
+
+        <router-view />
+      </div>
     </q-page-container>
   </q-layout>
 </template>
@@ -149,6 +170,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
+import TeacherBackButton from 'src/components/teacher/TeacherBackButton.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()
@@ -171,8 +193,8 @@ const navItems = [
   },
   {
     name: 'teacher-courses',
-    label: 'Cursos',
-    caption: 'CRUD, estructura y vista previa.',
+    label: 'Course Builder 2.0',
+    caption: 'Curso > Módulo > Lección con builder dedicado.',
     icon: 'school',
   },
   {
@@ -183,8 +205,8 @@ const navItems = [
   },
   {
     name: 'teacher-students',
-    label: 'Mis alumnos',
-    caption: 'Seguimiento, alertas y drill-down.',
+    label: 'Seguimiento',
+    caption: 'Avance, alertas y detalle por estudiante.',
     icon: 'groups',
   },
   {
@@ -195,11 +217,25 @@ const navItems = [
   },
   {
     name: 'teacher-activities',
-    label: 'Actividades',
-    caption: 'Lecciones interactivas y configuración.',
+    label: 'Medios + Actividades',
+    caption: 'Uploads pesados, XP, intentos y editor.',
     icon: 'extension',
   },
 ]
+
+const currentTeacherTitle = computed(() => {
+  const title = route.meta?.teacherTitle
+  return typeof title === 'function' ? title(route) : (title || 'Workspace docente')
+})
+
+const teacherBreadcrumbs = computed(() => {
+  const crumbs = route.meta?.teacherCrumbs
+  const resolved = typeof crumbs === 'function' ? crumbs(route) : (crumbs || [])
+
+  return resolved.length ? resolved : [{ label: 'Dashboard', to: { name: 'teacher-dashboard' } }]
+})
+
+const showBackButton = computed(() => route.name !== 'teacher-dashboard')
 
 const initials = computed(() => {
   const name = auth.user?.name || ''
@@ -274,5 +310,18 @@ watch(
 
 .teacher-page-container {
   background: transparent;
+}
+
+.teacher-page-shell {
+  min-height: 100%;
+}
+
+.teacher-crumb-bar {
+  position: sticky;
+  top: 64px;
+  z-index: 10;
+  background: rgba(12, 13, 29, 0.82);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(118, 122, 180, 0.12);
 }
 </style>

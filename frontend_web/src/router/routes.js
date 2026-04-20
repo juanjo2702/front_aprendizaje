@@ -86,59 +86,152 @@ const routes = [
   {
     path: '/teacher',
     component: () => import('layouts/TeacherLayout.vue'),
-    meta: { requiresAuth: true, requiresRole: ['instructor'] },
+    meta: { requiresAuth: true, requiresRole: ['instructor', 'admin'] },
     children: [
       {
         path: 'dashboard',
         name: 'teacher-dashboard',
         component: () => import('pages/teacher/TeacherDashboardPage.vue'),
+        meta: {
+          teacherTitle: 'Dashboard de Instructor',
+          teacherCrumbs: [{ label: 'Dashboard' }],
+        },
       },
       {
         path: 'courses',
         name: 'teacher-courses',
         component: () => import('pages/teacher/CourseBuilderPage.vue'),
+        meta: {
+          teacherTitle: 'Course Builder 2.0',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Course Builder 2.0' },
+          ],
+        },
+      },
+      {
+        path: 'courses/:courseId/builder',
+        name: 'teacher-course-builder',
+        component: () => import('pages/teacher/CourseBuilderWorkspacePage.vue'),
+        props: true,
+        meta: {
+          teacherTitle: (route) => route.query.courseTitle || `Builder del curso #${route.params.courseId}`,
+          teacherCrumbs: (route) => [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Course Builder 2.0', to: { name: 'teacher-courses' } },
+            { label: route.query.courseTitle || `Curso #${route.params.courseId}` },
+          ],
+        },
       },
       {
         path: 'marketplace',
         name: 'teacher-marketplace',
         component: () => import('pages/public/CatalogPage.vue'),
+        meta: {
+          teacherTitle: 'Marketplace docente',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Marketplace' },
+          ],
+        },
       },
       {
         path: 'marketplace/:slug',
         name: 'teacher-marketplace-course',
         component: () => import('pages/public/CourseDetailPage.vue'),
+        meta: {
+          teacherTitle: 'Detalle del catálogo',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Marketplace', to: { name: 'teacher-marketplace' } },
+            { label: 'Detalle del curso' },
+          ],
+        },
       },
       {
         path: 'courses/:slug/preview',
         name: 'teacher-course-preview',
         component: () => import('pages/public/CourseDetailPage.vue'),
         props: { previewMode: true },
+        meta: {
+          teacherTitle: 'Previsualización de curso',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Course Builder 2.0', to: { name: 'teacher-courses' } },
+            { label: 'Preview de curso' },
+          ],
+        },
       },
       {
         path: 'preview/lesson/:lessonId',
         name: 'teacher-lesson-preview',
         component: () => import('pages/lessons/LessonPlayerPage.vue'),
         props: { previewMode: true },
+        meta: {
+          teacherTitle: 'Previsualización de lección',
+          teacherCrumbs: (route) => [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            {
+              label: 'Course Builder 2.0',
+              to: route.query.courseId
+                ? {
+                    name: 'teacher-course-builder',
+                    params: { courseId: route.query.courseId },
+                    query: route.query.courseTitle ? { courseTitle: route.query.courseTitle } : undefined,
+                  }
+                : { name: 'teacher-courses' },
+            },
+            { label: 'Preview de lección' },
+          ],
+        },
       },
       {
         path: 'gamification',
         name: 'teacher-gamification',
         component: () => import('pages/teacher/TeacherGamificationPage.vue'),
+        meta: {
+          teacherTitle: 'Gamificación por actividad',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Gamificación' },
+          ],
+        },
       },
       {
         path: 'gradebook',
         name: 'teacher-gradebook',
         component: () => import('pages/teacher/TeacherGradebookPage.vue'),
+        meta: {
+          teacherTitle: 'Libreta e intentos',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Libreta' },
+          ],
+        },
       },
       {
         path: 'activities',
         name: 'teacher-activities',
         component: () => import('pages/teacher/TeacherActivitiesPage.vue'),
+        meta: {
+          teacherTitle: 'Gestor de Medios y Actividades',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Medios y actividades' },
+          ],
+        },
       },
       {
         path: 'students',
         name: 'teacher-students',
         component: () => import('pages/teacher/TeacherStudentsPage.vue'),
+        meta: {
+          teacherTitle: 'Monitor de Estudiantes',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Seguimiento de estudiantes' },
+          ],
+        },
       },
     ],
   },
@@ -153,81 +246,133 @@ const routes = [
         path: 'dashboard',
         name: 'admin-dashboard',
         component: () => import('pages/admin/AdminDashboardPage.vue'),
+        meta: {
+          adminTitle: 'Dashboard global',
+          adminCrumbs: [{ label: 'Inicio' }],
+        },
       },
       {
         path: 'users',
         name: 'admin-users',
         component: () => import('pages/admin/UsersListPage.vue'),
-      },
-      {
-        path: 'users/create',
-        name: 'admin-users-create',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'users/roles',
-        name: 'admin-users-roles',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        meta: {
+          adminTitle: 'Usuarios',
+          adminCrumbs: [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Usuarios' },
+          ],
+        },
       },
       {
         path: 'courses',
         name: 'admin-courses',
         component: () => import('pages/admin/CoursesListPage.vue'),
+        meta: {
+          adminTitle: 'Curación y revisión',
+          adminCrumbs: [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Cursos' },
+          ],
+        },
       },
       {
-        path: 'courses/create',
-        name: 'admin-courses-create',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        path: 'courses/:courseId/review',
+        name: 'admin-course-review',
+        component: () => import('pages/admin/AdminCourseReviewPage.vue'),
+        props: true,
+        meta: {
+          adminTitle: (route) => route.query.courseTitle || `Revisión del curso #${route.params.courseId}`,
+          adminCrumbs: (route) => [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Cursos', to: { name: 'admin-courses' } },
+            { label: 'Revisión' },
+            { label: route.query.courseTitle || `Curso #${route.params.courseId}` },
+          ],
+        },
       },
       {
-        path: 'categories',
-        name: 'admin-categories',
-        component: () => import('pages/admin/CategoriesListPage.vue'),
+        path: 'courses/:slug/preview',
+        name: 'admin-course-preview',
+        component: () => import('pages/public/CourseDetailPage.vue'),
+        props: { previewMode: true },
+        meta: {
+          adminTitle: 'Inspección del learning player',
+          adminCrumbs: (route) => [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Cursos', to: { name: 'admin-courses' } },
+            route.query.courseId
+              ? {
+                  label: 'Revisión',
+                  to: {
+                    name: 'admin-course-review',
+                    params: { courseId: route.query.courseId },
+                    query: route.query.courseTitle ? { courseTitle: route.query.courseTitle } : undefined,
+                  },
+                }
+              : { label: 'Preview' },
+            { label: 'Preview de curso' },
+          ],
+        },
       },
       {
-        path: 'lessons',
-        name: 'admin-lessons',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        path: 'preview/lesson/:lessonId',
+        name: 'admin-lesson-preview',
+        component: () => import('pages/lessons/LessonPlayerPage.vue'),
+        props: { previewMode: true },
+        meta: {
+          adminTitle: 'Inspección de lección',
+          adminCrumbs: (route) => [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Cursos', to: { name: 'admin-courses' } },
+            route.query.courseId
+              ? {
+                  label: 'Revisión',
+                  to: {
+                    name: 'admin-course-review',
+                    params: { courseId: route.query.courseId },
+                    query: route.query.courseTitle ? { courseTitle: route.query.courseTitle } : undefined,
+                  },
+                }
+              : { label: 'Preview' },
+            { label: 'Preview de lección' },
+          ],
+        },
       },
       {
-        path: 'quizzes',
-        name: 'admin-quizzes',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'games',
-        name: 'admin-games',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'payments',
-        name: 'admin-payments',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'subscriptions',
-        name: 'admin-subscriptions',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        path: 'finances',
+        name: 'admin-finances',
+        component: () => import('pages/admin/AdminFinancePage.vue'),
+        meta: {
+          adminTitle: 'The Vault',
+          adminCrumbs: [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Finanzas' },
+          ],
+        },
       },
       {
         path: 'reports',
         name: 'admin-reports',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        component: () => import('pages/admin/AdminReportsPage.vue'),
+        meta: {
+          adminTitle: 'Reportes y auditoría',
+          adminCrumbs: [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Reportes' },
+          ],
+        },
       },
       {
-        path: 'settings',
-        name: 'admin-settings',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'logs',
-        name: 'admin-logs',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
-      },
-      {
-        path: 'backup',
-        name: 'admin-backup',
-        component: () => import('pages/admin/AdminPlaceholderPage.vue'),
+        path: 'gamification',
+        name: 'admin-gamification',
+        component: () => import('pages/admin/AdminGamificationPage.vue'),
+        meta: {
+          adminTitle: 'Laboratorio de gamificación',
+          adminCrumbs: [
+            { label: 'Inicio', to: { name: 'admin-dashboard' } },
+            { label: 'Gamificación' },
+          ],
+        },
       },
     ],
   },
@@ -245,6 +390,11 @@ const routes = [
   { path: '/student/arena/:lessonId', redirect: (to) => `/student/learn/${to.params.lessonId}` },
   { path: '/instructor/courses', redirect: { name: 'teacher-courses' } },
   { path: '/admin', redirect: { name: 'admin-dashboard' } },
+  { path: '/admin/payments', redirect: { name: 'admin-finances' } },
+  { path: '/admin/settings', redirect: { name: 'admin-finances' } },
+  { path: '/admin/games', redirect: { name: 'admin-gamification' } },
+  { path: '/admin/quizzes', redirect: { name: 'admin-gamification' } },
+  { path: '/admin/categories', redirect: { name: 'admin-gamification' } },
 
   // ─── 404 ────────────────────────────────────────────────
   {

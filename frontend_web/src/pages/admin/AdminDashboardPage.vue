@@ -1,346 +1,349 @@
 <template>
-  <q-page class="q-pa-lg">
-    <!-- Header con estadísticas principales -->
-    <div class="row q-mb-lg">
-      <div class="col-12">
-        <div class="text-h4 text-weight-bold q-mb-md">Dashboard Administrativo</div>
-        <div class="text-subtitle1 text-grey-7">
-          Resumen general de la plataforma - {{ currentDate }}
+  <q-page class="admin-page q-pa-xl">
+    <div class="page-wrap">
+      <section class="hero-panel q-pa-xl q-mb-lg">
+        <div class="row q-col-gutter-xl items-center">
+          <div class="col-12 col-lg-8">
+            <q-badge color="secondary" outline class="q-mb-md">Business Intelligence</q-badge>
+            <h1 class="q-mb-sm">Supervisión global del LMS</h1>
+            <p class="hero-copy q-mb-lg">
+              Controla curación de cursos, flujo financiero QR, equilibrio de gamificación y crecimiento operativo desde
+              una sola consola.
+            </p>
+            <div class="row q-gutter-sm">
+              <q-btn color="primary" no-caps icon="fact_check" label="Ir a revisión" :to="{ name: 'admin-courses' }" />
+              <q-btn flat no-caps color="secondary" icon="paid" label="Abrir finanzas" :to="{ name: 'admin-finances' }" />
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <q-card class="hero-summary q-pa-lg">
+              <div class="text-subtitle1 text-weight-bold q-mb-md">Colas críticas</div>
+              <div class="row q-col-gutter-md">
+                <div class="col-4">
+                  <div class="text-caption text-grey-5">Cursos</div>
+                  <div class="text-h6 text-weight-bold text-warning">{{ overview.pending_reviews || 0 }}</div>
+                </div>
+                <div class="col-4">
+                  <div class="text-caption text-grey-5">Pagos</div>
+                  <div class="text-h6 text-weight-bold text-secondary">{{ overview.pending_payments || 0 }}</div>
+                </div>
+                <div class="col-4">
+                  <div class="text-caption text-grey-5">Retiros</div>
+                  <div class="text-h6 text-weight-bold text-info">{{ overview.pending_payouts || 0 }}</div>
+                </div>
+              </div>
+            </q-card>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Cards de estadísticas -->
-    <div class="row q-col-gutter-md q-mb-lg">
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="bg-primary text-white">
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col-auto">
-                <q-icon name="people" size="40px" />
-              </div>
-              <div class="col q-pl-md">
-                <div class="text-h5 text-weight-bold">{{ stats.totalUsers || 0 }}</div>
-                <div class="text-subtitle2">Usuarios totales</div>
-              </div>
-            </div>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Ver usuarios" to="/admin/users" />
-          </q-card-actions>
-        </q-card>
+      <div v-if="loading" class="q-py-md">
+        <q-skeleton v-for="n in 5" :key="n" type="rect" height="120px" class="q-mb-md" dark />
       </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="bg-positive text-white">
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col-auto">
-                <q-icon name="school" size="40px" />
+      <template v-else>
+        <div class="row q-col-gutter-md q-mb-lg">
+          <div v-for="card in metricCards" :key="card.label" class="col-12 col-sm-6 col-xl-3">
+            <q-card class="metric-card q-pa-md">
+              <div class="row items-center q-col-gutter-md">
+                <div class="col-auto">
+                  <q-avatar size="54px" :color="card.color" text-color="white" :icon="card.icon" />
+                </div>
+                <div class="col">
+                  <div class="text-caption text-grey-5">{{ card.label }}</div>
+                  <div class="text-h5 text-weight-bold">{{ card.value }}</div>
+                  <div class="text-caption" :class="card.captionClass || 'text-grey-5'">{{ card.caption }}</div>
+                </div>
               </div>
-              <div class="col q-pl-md">
-                <div class="text-h5 text-weight-bold">{{ stats.totalCourses || 0 }}</div>
-                <div class="text-subtitle2">Cursos activos</div>
-              </div>
-            </div>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Ver cursos" to="/admin/courses" />
-          </q-card-actions>
-        </q-card>
-      </div>
+            </q-card>
+          </div>
+        </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="bg-warning text-white">
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col-auto">
-                <q-icon name="payments" size="40px" />
-              </div>
-              <div class="col q-pl-md">
-                <div class="text-h5 text-weight-bold">{{ formatCurrency(stats.totalRevenue || 0) }}</div>
-                <div class="text-subtitle2">Ingresos totales</div>
-              </div>
-            </div>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Ver pagos" to="/admin/payments" />
-          </q-card-actions>
-        </q-card>
-      </div>
+        <div class="row q-col-gutter-lg q-mb-lg">
+          <div class="col-12 col-xl-7">
+            <q-card class="panel-card full-height">
+              <q-card-section>
+                <div class="text-h6 text-weight-bold">Popularidad por categoría</div>
+                <div class="text-caption text-grey-5">Las categorías con más matrículas completadas.</div>
+              </q-card-section>
+              <q-separator dark />
+              <q-card-section>
+                <div v-if="!popularCategories.length" class="text-grey-5">Todavía no hay datos suficientes.</div>
+                <div v-else class="column q-gutter-md">
+                  <div v-for="category in popularCategories" :key="category.id" class="category-row">
+                    <div class="row items-center justify-between q-mb-xs">
+                      <div class="text-body1 text-weight-medium">{{ category.name }}</div>
+                      <div class="text-caption text-grey-5">{{ category.total_enrollments }} matrículas</div>
+                    </div>
+                    <q-linear-progress
+                      rounded
+                      size="10px"
+                      color="secondary"
+                      :value="category.total_enrollments / topCategoryTotal"
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="bg-info text-white">
-          <q-card-section>
-            <div class="row items-center">
-              <div class="col-auto">
-                <q-icon name="trending_up" size="40px" />
-              </div>
-              <div class="col q-pl-md">
-                <div class="text-h5 text-weight-bold">{{ stats.activeUsers || 0 }}</div>
-                <div class="text-subtitle2">Usuarios activos (7 días)</div>
-              </div>
-            </div>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Ver actividad" />
-          </q-card-actions>
-        </q-card>
-      </div>
-    </div>
+          <div class="col-12 col-xl-5">
+            <q-card class="panel-card full-height">
+              <q-card-section>
+                <div class="text-h6 text-weight-bold">Monitor de almacenamiento</div>
+                <div class="text-caption text-grey-5">Peso actual de videos y presión del disco local.</div>
+              </q-card-section>
+              <q-separator dark />
+              <q-card-section class="column q-gutter-lg">
+                <div>
+                  <div class="row items-center justify-between q-mb-sm">
+                    <div class="text-body2">Videos del LMS</div>
+                    <div class="text-weight-medium">{{ storage.video_human }}</div>
+                  </div>
+                  <q-linear-progress
+                    rounded
+                    size="12px"
+                    color="primary"
+                    :value="videoRatio"
+                  />
+                </div>
 
-    <!-- Gráficos y tablas -->
-    <div class="row q-col-gutter-lg">
-      <!-- Gráfico de usuarios por mes -->
-      <div class="col-12 col-md-8">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Crecimiento de usuarios</div>
-            <div class="text-subtitle2 text-grey-7">Registro de usuarios en los últimos 6 meses</div>
-          </q-card-section>
-          <q-card-section>
-            <div v-if="loading" class="text-center q-py-xl">
-              <q-spinner size="50px" color="primary" />
-            </div>
-            <div v-else class="chart-placeholder">
-              <!-- Aquí iría un gráfico real con Chart.js o similar -->
-              <div class="text-center text-grey-7 q-py-xl">
-                <q-icon name="bar_chart" size="60px" class="q-mb-md" />
-                <div>Gráfico de crecimiento de usuarios</div>
-                <div class="text-caption">(Integrar Chart.js para producción)</div>
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
+                <div>
+                  <div class="row items-center justify-between q-mb-sm">
+                    <div class="text-body2">Uso total del disco</div>
+                    <div class="text-weight-medium">{{ storage.disk_used_percentage || 0 }}%</div>
+                  </div>
+                  <q-linear-progress
+                    rounded
+                    size="12px"
+                    color="warning"
+                    :value="(storage.disk_used_percentage || 0) / 100"
+                  />
+                  <div class="text-caption text-grey-5 q-mt-sm">
+                    {{ formatBytes(storage.disk_used_bytes || 0) }} usados de
+                    {{ formatBytes(storage.disk_total_bytes || 0) }}.
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
 
-      <!-- Últimos usuarios registrados -->
-      <div class="col-12 col-md-4">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Usuarios recientes</div>
-            <div class="text-subtitle2 text-grey-7">Últimos 5 registros</div>
-          </q-card-section>
-          <q-card-section class="q-pa-none">
-            <q-list separator>
-              <q-item v-for="user in recentUsers" :key="user.id" clickable>
-                <q-item-section avatar>
-                  <q-avatar color="primary" text-color="white">
-                    {{ getUserInitials(user.name) }}
-                  </q-avatar>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ user.name }}</q-item-label>
-                  <q-item-label caption>{{ user.email }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge :color="getRoleColor(user.role)" rounded>
-                    {{ user.role }}
-                  </q-badge>
-                </q-item-section>
-              </q-item>
-              <q-item v-if="recentUsers.length === 0">
-                <q-item-section class="text-center text-grey-7 q-py-md">
-                  No hay usuarios registrados recientemente
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Ver todos" to="/admin/users" />
-          </q-card-actions>
-        </q-card>
-      </div>
-    </div>
+        <div class="row q-col-gutter-lg q-mb-lg">
+          <div class="col-12 col-xl-6">
+            <q-card class="panel-card full-height">
+              <q-card-section class="row items-center justify-between">
+                <div>
+                  <div class="text-h6 text-weight-bold">Cuellos pedagógicos</div>
+                  <div class="text-caption text-grey-5">Actividades donde los estudiantes más fallan.</div>
+                </div>
+                <q-btn flat no-caps color="secondary" label="Ver auditoría" :to="{ name: 'admin-reports' }" />
+              </q-card-section>
+              <q-separator dark />
+              <q-card-section class="q-pa-none">
+                <q-list separator dark>
+                  <q-item v-for="item in bottlenecks" :key="item.interactive_config_id">
+                    <q-item-section>
+                      <q-item-label>{{ item.lesson_title || 'Actividad sin lección' }}</q-item-label>
+                      <q-item-label caption>{{ item.course_title || 'Curso sin nombre' }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side class="text-right">
+                      <div class="text-body2 text-negative">{{ item.failed_results }} fallos</div>
+                      <div class="text-caption text-grey-5">{{ item.average_attempts }} intentos prom.</div>
+                    </q-item-section>
+                  </q-item>
+                  <q-item v-if="!bottlenecks.length">
+                    <q-item-section class="text-grey-5">No se detectaron cuellos críticos todavía.</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card-section>
+            </q-card>
+          </div>
 
-    <!-- Cursos más populares -->
-    <div class="row q-mt-lg">
-      <div class="col-12">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Cursos más populares</div>
-            <div class="text-subtitle2 text-grey-7">Por número de inscripciones</div>
-          </q-card-section>
-          <q-card-section class="q-pa-none">
-            <q-table
-              :rows="popularCourses"
-              :columns="courseColumns"
-              row-key="id"
-              flat
-              bordered
-              :loading="loading"
-            >
-              <template #body-cell-enrollments="props">
-                <q-td :props="props">
-                  <q-badge color="primary" rounded>
-                    {{ props.row.enrollments }}
-                  </q-badge>
-                </q-td>
-              </template>
-              <template #body-cell-actions="props">
-                <q-td :props="props">
-                  <q-btn flat dense icon="visibility" size="sm" :to="`/admin/courses/${props.row.id}`" />
-                </q-td>
-              </template>
-            </q-table>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
-
-    <!-- Actividad reciente del sistema -->
-    <div class="row q-mt-lg">
-      <div class="col-12">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Actividad reciente</div>
-            <div class="text-subtitle2 text-grey-7">Eventos importantes en la plataforma</div>
-          </q-card-section>
-          <q-card-section>
-            <q-timeline color="secondary">
-              <q-timeline-entry
-                v-for="activity in recentActivity"
-                :key="activity.id"
-                :title="activity.title"
-                :subtitle="formatDate(activity.created_at)"
-                :icon="activity.icon"
-                :color="activity.color"
-              >
-                {{ activity.description }}
-              </q-timeline-entry>
-            </q-timeline>
-          </q-card-section>
-        </q-card>
-      </div>
+          <div class="col-12 col-xl-6">
+            <q-card class="panel-card full-height">
+              <q-card-section class="row items-center justify-between">
+                <div>
+                  <div class="text-h6 text-weight-bold">Logs recientes</div>
+                  <div class="text-caption text-grey-5">Quién aprobó, rechazó o ajustó algo y cuándo.</div>
+                </div>
+                <q-btn flat no-caps color="secondary" label="Ver reportes" :to="{ name: 'admin-reports' }" />
+              </q-card-section>
+              <q-separator dark />
+              <q-card-section class="q-pa-none">
+                <q-list separator dark>
+                  <q-item v-for="log in recentLogs" :key="log.id">
+                    <q-item-section>
+                      <q-item-label>{{ actionLabel(log.action) }}</q-item-label>
+                      <q-item-label caption>
+                        {{ log.actor?.name || 'Sistema' }} · {{ log.target_label || 'Sin objetivo' }}
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section side class="text-caption text-grey-5">
+                      {{ formatDate(log.created_at) }}
+                    </q-item-section>
+                  </q-item>
+                  <q-item v-if="!recentLogs.length">
+                    <q-item-section class="text-grey-5">No hay registros administrativos todavía.</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </template>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from 'src/stores/auth'
+import { computed, onMounted, ref } from 'vue'
 import { api } from 'src/services/api'
 
-const auth = useAuthStore()
 const loading = ref(true)
-const stats = ref({})
-const recentUsers = ref([])
-const popularCourses = ref([])
-const recentActivity = ref([])
+const overview = ref({})
+const popularCategories = ref([])
+const storage = ref({})
+const recentLogs = ref([])
+const bottlenecks = ref([])
 
-const currentDate = new Date().toLocaleDateString('es-ES', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
+const metricCards = computed(() => [
+  {
+    label: 'Usuarios activos',
+    value: overview.value.active_users || 0,
+    caption: 'Actividad real últimos 7 días',
+    icon: 'groups',
+    color: 'primary',
+  },
+  {
+    label: 'Ingresos del mes',
+    value: formatCurrency(overview.value.monthly_revenue || 0),
+    caption: 'Pagos confirmados por QR / webhook',
+    icon: 'payments',
+    color: 'positive',
+  },
+  {
+    label: 'Tasa de deserción',
+    value: `${overview.value.dropout_rate || 0}%`,
+    caption: 'Matrículas con bajo avance a 14+ días',
+    icon: 'trending_down',
+    color: 'warning',
+  },
+  {
+    label: 'Cursos publicados',
+    value: overview.value.published_courses || 0,
+    caption: `${overview.value.pending_reviews || 0} en revisión`,
+    icon: 'verified',
+    color: 'secondary',
+  },
+])
+
+const topCategoryTotal = computed(() => {
+  const first = popularCategories.value[0]?.total_enrollments || 1
+  return Math.max(first, 1)
 })
 
-const courseColumns = [
-  { name: 'title', label: 'Curso', field: 'title', align: 'left', sortable: true },
-  { name: 'instructor', label: 'Instructor', field: row => row.instructor?.name, align: 'left' },
-  { name: 'enrollments', label: 'Inscripciones', field: 'enrollments', align: 'center' },
-  { name: 'rating', label: 'Rating', field: 'rating', align: 'center' },
-  { name: 'actions', label: 'Acciones', align: 'right' }
-]
+const videoRatio = computed(() => {
+  const total = Number(storage.value.disk_total_bytes || 0)
+  const used = Number(storage.value.video_bytes || 0)
+  if (!total) return 0
+  return Math.min(1, used / total)
+})
 
 function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-ES', {
+  return new Intl.NumberFormat('es-BO', {
     style: 'currency',
-    currency: 'EUR'
-  }).format(amount)
+    currency: 'BOB',
+    minimumFractionDigits: 2,
+  }).format(Number(amount || 0))
 }
 
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString('es-ES', {
+function formatBytes(bytes = 0) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
+function formatDate(date) {
+  if (!date) return '-'
+  return new Date(date).toLocaleString('es-BO', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
-function getUserInitials(name) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2)
+function actionLabel(action = '') {
+  return ({
+    'course.status_changed': 'Cambio de estado de curso',
+    'payment.approved': 'Pago aprobado',
+    'payment.rejected': 'Pago rechazado',
+    'payout.status_changed': 'Retiro actualizado',
+    'platform.settings_updated': 'Configuración global editada',
+    'badge.created': 'Badge creado',
+    'reward.created': 'Recompensa creada',
+  }[action] || action)
 }
 
-function getRoleColor(role) {
-  const colors = {
-    admin: 'negative',
-    instructor: 'warning',
-    student: 'positive'
-  }
-  return colors[role] || 'grey'
-}
-
-async function loadDashboardData() {
+async function loadDashboard() {
+  loading.value = true
   try {
-    loading.value = true
-    // TODO: Implementar endpoints reales para dashboard admin
-    // Por ahora usamos datos mock
-    stats.value = {
-      totalUsers: 1254,
-      totalCourses: 42,
-      totalRevenue: 12500,
-      activeUsers: 342
-    }
-    
-    recentUsers.value = [
-      { id: 1, name: 'Juan Pérez', email: 'juan@example.com', role: 'student' },
-      { id: 2, name: 'María López', email: 'maria@example.com', role: 'instructor' },
-      { id: 3, name: 'Carlos Ruiz', email: 'carlos@example.com', role: 'student' },
-      { id: 4, name: 'Ana García', email: 'ana@example.com', role: 'student' },
-      { id: 5, name: 'Pedro Martínez', email: 'pedro@example.com', role: 'admin' }
-    ]
-    
-    popularCourses.value = [
-      { id: 1, title: 'Introducción a JavaScript', instructor: { name: 'María López' }, enrollments: 245, rating: 4.8 },
-      { id: 2, title: 'Diseño UI/UX', instructor: { name: 'Carlos Ruiz' }, enrollments: 189, rating: 4.7 },
-      { id: 3, title: 'React Avanzado', instructor: { name: 'Ana García' }, enrollments: 156, rating: 4.9 },
-      { id: 4, title: 'Node.js Backend', instructor: { name: 'Pedro Martínez' }, enrollments: 123, rating: 4.6 },
-      { id: 5, title: 'Base de Datos SQL', instructor: { name: 'Juan Pérez' }, enrollments: 98, rating: 4.5 }
-    ]
-    
-    recentActivity.value = [
-      { id: 1, title: 'Nuevo usuario registrado', description: 'Carlos Ruiz se registró en la plataforma', icon: 'person_add', color: 'primary', created_at: new Date(Date.now() - 3600000).toISOString() },
-      { id: 2, title: 'Curso publicado', description: 'Nuevo curso "Introducción a Python" publicado', icon: 'school', color: 'positive', created_at: new Date(Date.now() - 7200000).toISOString() },
-      { id: 3, title: 'Pago procesado', description: 'Transacción completada por €49.99', icon: 'payments', color: 'warning', created_at: new Date(Date.now() - 10800000).toISOString() },
-      { id: 4, title: 'Certificado generado', description: 'Certificado completado para "Juan Pérez"', icon: 'verified', color: 'info', created_at: new Date(Date.now() - 14400000).toISOString() }
-    ]
-    
-    // Intento cargar datos reales si los endpoints existen
-    try {
-      // const response = await api.get('/admin/dashboard-stats')
-      // stats.value = response.data
-    } catch (error) {
-      console.log('Usando datos mock para dashboard:', error.message)
-    }
-  } catch (error) {
-    console.error('Error cargando dashboard:', error)
+    const { data } = await api.get('/admin/dashboard-stats')
+    overview.value = data.overview || {}
+    popularCategories.value = data.popular_categories || []
+    storage.value = data.storage || {}
+    recentLogs.value = data.recent_logs || []
+    bottlenecks.value = data.bottlenecks_preview || []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  loadDashboardData()
-})
+onMounted(loadDashboard)
 </script>
 
-<style lang="scss" scoped>
-.chart-placeholder {
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #ccc;
-  border-radius: 8px;
-  background: #f8f9fa;
+<style scoped lang="scss">
+.admin-page {
+  background: transparent;
+}
+
+.page-wrap {
+  max-width: 1340px;
+  margin: 0 auto;
+}
+
+.hero-panel {
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(0, 196, 180, 0.16), transparent 36%),
+    radial-gradient(circle at bottom left, rgba(39, 112, 255, 0.14), transparent 30%),
+    linear-gradient(145deg, rgba(12, 27, 50, 0.98), rgba(8, 18, 36, 0.98));
+  border: 1px solid rgba(93, 122, 255, 0.18);
+}
+
+.hero-panel h1 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.08;
+  margin: 0;
+}
+
+.hero-copy {
+  color: #c1d0eb;
+  max-width: 760px;
+}
+
+.hero-summary,
+.metric-card,
+.panel-card {
+  border-radius: 24px;
+  background: rgba(8, 18, 36, 0.88);
+  border: 1px solid rgba(93, 122, 255, 0.16);
+}
+
+.category-row {
+  display: grid;
+  gap: 8px;
 }
 </style>

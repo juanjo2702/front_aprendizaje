@@ -184,6 +184,17 @@
             <q-badge class="q-mt-md" :color="paymentCompleted ? 'positive' : 'warning'" text-color="dark">
               {{ paymentCompleted ? 'Pago confirmado' : 'Esperando pago' }}
             </q-badge>
+            <q-btn
+              v-if="showSimulateButton && !paymentCompleted"
+              class="q-mt-md"
+              outline
+              color="warning"
+              no-caps
+              icon="bug_report"
+              label="Simular pago (demo)"
+              :loading="simulatingPayment"
+              @click="simulatePayment"
+            />
           </div>
         </q-card-section>
       </q-card>
@@ -198,6 +209,7 @@ import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudentStore } from 'src/stores/student'
 import StudentVideoPlayer from 'src/components/student/StudentVideoPlayer.vue'
+import { api } from 'src/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -207,6 +219,8 @@ const { currentCourse, currentCourseLoading, currentCourseProgress, paymentInten
 
 const checkoutDialog = ref(false)
 const paymentCompleted = ref(false)
+const simulatingPayment = ref(false)
+const showSimulateButton = computed(() => import.meta.env.DEV || window.location.hostname === 'localhost')
 
 const learningItems = computed(() => {
   const items = currentCourse.value?.what_you_learn || []
@@ -282,6 +296,28 @@ async function openCheckout() {
 function closeCheckout() {
   checkoutDialog.value = false
   studentStore.clearPaymentIntent()
+}
+
+async function simulatePayment() {
+  if (!paymentIntent.value?.transaction_id) return
+
+  simulatingPayment.value = true
+  try {
+    await api.post('/payments/webhook', {
+      transaction_id: paymentIntent.value.transaction_id,
+    })
+
+    paymentCompleted.value = true
+    $q.notify({
+      type: 'positive',
+      message: 'Pago simulado correctamente. El curso quedó desbloqueado.',
+    })
+
+    studentStore.clearPaymentIntent()
+    await studentStore.loadCourseDetail(route.params.slug)
+  } finally {
+    simulatingPayment.value = false
+  }
 }
 </script>
 

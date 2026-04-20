@@ -34,22 +34,22 @@
 
       <!-- Question -->
       <div class="question-card glass-card q-pa-lg q-mb-lg">
-        <div class="text-h6 q-mb-md">{{ currentQuestion.text }}</div>
+        <div class="text-h6 q-mb-md">{{ currentQuestion.prompt || currentQuestion.text }}</div>
 
-        <div class="options q-gutter-y-sm">
+        <div :key="currentQuestion.id || currentQuestionIndex" class="options q-gutter-y-sm">
           <q-btn
-            v-for="(option, idx) in currentQuestion.options"
-            :key="idx"
+            v-for="option in currentQuestion.options || []"
+            :key="option.localId"
             flat
             no-caps
             :label="option.text"
             class="full-width text-left justify-start option-btn"
             :class="{
-              correct: selectedOption === idx && option.is_correct,
-              incorrect: selectedOption === idx && !option.is_correct,
+              correct: selectedOptionId === option.localId && option.is_correct,
+              incorrect: selectedOptionId === option.localId && !option.is_correct,
             }"
             :disable="answered"
-            @click="selectOption(idx)"
+            @click="selectOption(option.localId)"
           />
         </div>
       </div>
@@ -67,7 +67,7 @@
           color="primary"
           icon="mdi-skip-next"
           label="Siguiente"
-          :disable="selectedOption === null"
+          :disable="selectedOptionId === null"
           @click="nextQuestion"
         />
         <q-btn v-else color="positive" icon="mdi-check" label="Continuar" @click="nextQuestion" />
@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { api } from 'src/services/api'
 
 const props = defineProps({
@@ -96,7 +96,7 @@ const emit = defineEmits(['completed'])
 const gameStarted = ref(false)
 const questions = ref([])
 const currentQuestionIndex = ref(0)
-const selectedOption = ref(null)
+const selectedOptionId = ref(null)
 const answered = ref(false)
 const correctAnswers = ref(0)
 const timeLeft = ref(30)
@@ -120,6 +120,10 @@ async function startGame() {
 
     gameStarted.value = true
     startTime.value = Date.now()
+    currentQuestionIndex.value = 0
+    correctAnswers.value = 0
+    answered.value = false
+    selectedOptionId.value = null
     initializeQuestions()
     startTimer()
   } catch (error) {
@@ -127,6 +131,10 @@ async function startGame() {
     // Continuar sin sesión de juego (modo demo)
     gameStarted.value = true
     startTime.value = Date.now()
+    currentQuestionIndex.value = 0
+    correctAnswers.value = 0
+    answered.value = false
+    selectedOptionId.value = null
     initializeQuestions()
     startTimer()
   }
@@ -135,9 +143,9 @@ async function startGame() {
 function initializeQuestions() {
   // If config has questions, use them, else generate dummy
   if (props.config.questions && props.config.questions.length > 0) {
-    questions.value = props.config.questions
+    questions.value = normalizeQuestions(props.config.questions)
   } else {
-    questions.value = [
+    questions.value = normalizeQuestions([
       {
         text: '¿Laravel es un framework de PHP?',
         options: [
@@ -159,37 +167,62 @@ function initializeQuestions() {
           { text: 'Falso', is_correct: true },
         ],
       },
-    ]
+    ])
+  }
+}
+
+function normalizeQuestions(sourceQuestions = []) {
+  return sourceQuestions.map((question, questionIndex) => ({
+    ...question,
+    id: question.id || `question-${questionIndex}`,
+    text: question.text || question.prompt || '',
+    prompt: question.prompt || question.text || '',
+    options: (question.options || []).map((option, optionIndex) => ({
+      ...option,
+      localId: option.id || `${question.id || questionIndex}-option-${optionIndex}`,
+      text: option.text || option.label || '',
+    })),
+  }))
+}
+
+function clearTimer() {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
   }
 }
 
 function startTimer() {
+  clearTimer()
   timeLeft.value = timeLimit
   timer = setInterval(() => {
     timeLeft.value--
     if (timeLeft.value <= 0) {
-      clearInterval(timer)
+      clearTimer()
       endGame()
     }
   }, 1000)
 }
 
-function selectOption(index) {
+function selectOption(optionId) {
   if (answered.value) return
-  selectedOption.value = index
+  const option = currentQuestion.value.options?.find((item) => item.localId === optionId)
+  if (!option) return
+
+  selectedOptionId.value = optionId
   answered.value = true
 
-  if (currentQuestion.value.options[index].is_correct) {
+  if (option.is_correct) {
     correctAnswers.value++
   }
 
-  clearInterval(timer)
+  clearTimer()
 }
 
 function nextQuestion() {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++
-    selectedOption.value = null
+    selectedOptionId.value = null
     answered.value = false
     startTimer()
   } else {
@@ -198,7 +231,7 @@ function nextQuestion() {
 }
 
 async function endGame() {
-  clearInterval(timer)
+  clearTimer()
   const score = Math.round((correctAnswers.value / questions.value.length) * props.maxScore)
   totalTimeSpent.value = Math.floor((Date.now() - startTime.value) / 1000)
 
@@ -221,8 +254,8 @@ async function endGame() {
   emit('completed', score)
 }
 
-onMounted(() => {
-  // Nothing
+onBeforeUnmount(() => {
+  clearTimer()
 })
 </script>
 

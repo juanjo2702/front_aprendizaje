@@ -37,20 +37,20 @@
               <div class="text-subtitle1 text-weight-bold q-mb-md">Estado del workspace</div>
               <div class="row q-col-gutter-md">
                 <div class="col-6">
+                  <div class="text-caption text-grey-5">Ventas cerradas</div>
+                  <div class="text-h5 text-positive">{{ metrics.totalSales }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-caption text-grey-5">Alumnos activos (7d)</div>
+                  <div class="text-h5 text-secondary">{{ metrics.activeStudents }}</div>
+                </div>
+                <div class="col-6">
                   <div class="text-caption text-grey-5">Cursos publicados</div>
-                  <div class="text-h5 text-positive">{{ metrics.publishedCourses }}</div>
+                  <div class="text-h5 text-info">{{ metrics.publishedCourses }}</div>
                 </div>
                 <div class="col-6">
                   <div class="text-caption text-grey-5">Borradores activos</div>
                   <div class="text-h5 text-warning">{{ metrics.draftCourses }}</div>
-                </div>
-                <div class="col-6">
-                  <div class="text-caption text-grey-5">Actividades</div>
-                  <div class="text-h5 text-secondary">{{ metrics.interactiveActivities }}</div>
-                </div>
-                <div class="col-6">
-                  <div class="text-caption text-grey-5">Reglas de juego</div>
-                  <div class="text-h5 text-info">{{ metrics.gameRules }}</div>
                 </div>
               </div>
             </q-card>
@@ -74,9 +74,9 @@
           </div>
           <div class="col-12 col-sm-6 col-xl-3">
             <TeacherMetricCard
-              label="Estudiantes totales"
-              :value="metrics.totalStudents"
-              hint="Suma de alumnos inscritos en tus cursos."
+              label="Estudiantes activos"
+              :value="metrics.activeStudents"
+              hint="Alumnos con actividad reciente dentro de tus cursos."
               icon="groups"
               icon-color="secondary"
               value-color="#00d2d3"
@@ -93,9 +93,9 @@
           </div>
           <div class="col-12 col-sm-6 col-xl-3">
             <TeacherMetricCard
-              label="Ingresos estimados"
-              :value="metrics.estimatedRevenue"
-              hint="Cálculo base por precio y estudiantes inscritos."
+              label="Ventas cerradas"
+              :value="metrics.totalSales"
+              hint="Suma de pagos completados en los cursos del instructor."
               icon="payments"
               icon-color="positive"
               value-color="#7ee081"
@@ -149,7 +149,7 @@
           <div class="col-12 col-xl-6">
             <TeacherCourseHealthList
               title="Pendientes de publicación"
-              subtitle="Cursos que todavía necesitan revisión antes de salir al alumno."
+              subtitle="Cursos en borrador que todavía necesitan revisión antes de salir al alumno."
               :items="draftItems"
               @action="openCourseManager"
             />
@@ -159,6 +159,14 @@
               title="Cursos sin contenido suficiente"
               subtitle="Detecta rápido lo que todavía no tiene módulos o lecciones."
               :items="structureItems"
+              @action="openCourseManager"
+            />
+          </div>
+          <div class="col-12 col-xl-6">
+            <TeacherCourseHealthList
+              title="Cursos destacados por rendimiento"
+              subtitle="Mientras no exista rating formal, usamos score promedio de actividades."
+              :items="topRatedItems"
               @action="openCourseManager"
             />
           </div>
@@ -220,6 +228,8 @@
                     <div class="col-auto">Módulos: {{ course.modules_count || 0 }}</div>
                     <div class="col-auto">Lecciones: {{ course.lessons_count || 0 }}</div>
                     <div class="col-auto">Estudiantes: {{ course.total_students || 0 }}</div>
+                    <div class="col-auto">Activos 7d: {{ course.active_students || 0 }}</div>
+                    <div class="col-auto">Score: {{ Number(course.average_learning_score || 0).toFixed(1) }}</div>
                     <div class="col-auto">Precio: {{ formatCurrency(course.price) }}</div>
                   </div>
                 </div>
@@ -290,14 +300,15 @@ const metrics = computed(() => {
   const publishedCourses = courses.value.filter((course) => course.status === 'published').length
   const draftCourses = courses.value.filter((course) => ['draft', 'pending'].includes(course.status)).length
   const totalStudents = courses.value.reduce((sum, course) => sum + Number(course.total_students || 0), 0)
+  const activeStudents = courses.value.reduce((sum, course) => sum + Number(course.active_students || 0), 0)
   const totalModules = courses.value.reduce((sum, course) => sum + Number(course.modules_count || 0), 0)
   const totalLessons = courses.value.reduce((sum, course) => sum + Number(course.lessons_count || 0), 0)
-  const estimatedRevenue = new Intl.NumberFormat('es-BO', {
+  const totalSales = new Intl.NumberFormat('es-BO', {
     style: 'currency',
     currency: 'USD',
   }).format(
     courses.value.reduce(
-      (sum, course) => sum + (Number(course.price || 0) * Number(course.total_students || 0)),
+      (sum, course) => sum + Number(course.completed_sales_amount || 0),
       0,
     ),
   )
@@ -307,9 +318,10 @@ const metrics = computed(() => {
     publishedCourses,
     draftCourses,
     totalStudents,
+    activeStudents,
     totalModules,
     totalLessons,
-    estimatedRevenue,
+    totalSales,
     interactiveActivities: interactiveConfigs.value.length,
     gameRules: gameRules.value.length,
   }
@@ -341,6 +353,19 @@ const structureItems = computed(() =>
           ? 'Aún no tiene módulos creados.'
           : 'Tiene módulos, pero todavía faltan lecciones para completarlo.',
       actionLabel: 'Completar estructura',
+    })),
+)
+
+const topRatedItems = computed(() =>
+  [...courses.value]
+    .sort((left, right) => Number(right.average_learning_score || 0) - Number(left.average_learning_score || 0))
+    .filter((course) => Number(course.average_learning_score || 0) > 0)
+    .slice(0, 5)
+    .map((course) => ({
+      id: course.id,
+      title: course.title,
+      caption: `${Number(course.average_learning_score || 0).toFixed(1)} pts promedio · ${course.active_students || 0} activos`,
+      actionLabel: 'Abrir builder',
     })),
 )
 

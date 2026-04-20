@@ -228,8 +228,6 @@ const roleOptions = [
 ]
 
 const statusOptions = [
-  { label: 'Activo', value: 'active' },
-  { label: 'Inactivo', value: 'inactive' },
   { label: 'Verificado', value: 'verified' },
   { label: 'Pendiente', value: 'pending' }
 ]
@@ -293,32 +291,19 @@ function getUserInitials(name) {
 async function loadUsers() {
   try {
     loading.value = true
-    
-    // TODO: Implementar endpoint real para listar usuarios
-    // Por ahora usamos datos mock
-    users.value = [
-      { id: 1, name: 'Administrador Sistema', email: 'admin@plataforma.com', role: 'admin', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-01-15', last_login: new Date().toISOString() },
-      { id: 2, name: 'María López', email: 'maria@example.com', role: 'instructor', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-02-20', last_login: new Date(Date.now() - 86400000).toISOString() },
-      { id: 3, name: 'Juan Pérez', email: 'juan@example.com', role: 'student', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-05', last_login: new Date(Date.now() - 172800000).toISOString() },
-      { id: 4, name: 'Ana García', email: 'ana@example.com', role: 'student', avatar: null, email_verified_at: null, created_at: '2024-03-10', last_login: null },
-      { id: 5, name: 'Carlos Ruiz', email: 'carlos@example.com', role: 'instructor', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-12', last_login: new Date(Date.now() - 259200000).toISOString() },
-      { id: 6, name: 'Pedro Martínez', email: 'pedro@example.com', role: 'student', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-15', last_login: new Date(Date.now() - 345600000).toISOString() },
-      { id: 7, name: 'Laura Fernández', email: 'laura@example.com', role: 'student', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-18', last_login: new Date(Date.now() - 432000000).toISOString() },
-      { id: 8, name: 'Sofía Rodríguez', email: 'sofia@example.com', role: 'instructor', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-20', last_login: new Date(Date.now() - 518400000).toISOString() },
-      { id: 9, name: 'Diego Sánchez', email: 'diego@example.com', role: 'student', avatar: null, email_verified_at: null, created_at: '2024-03-22', last_login: null },
-      { id: 10, name: 'Elena Gómez', email: 'elena@example.com', role: 'student', avatar: null, email_verified_at: new Date().toISOString(), created_at: '2024-03-25', last_login: new Date(Date.now() - 604800000).toISOString() }
-    ]
-    
-    pagination.value.rowsNumber = users.value.length
-    
-    // Intento cargar datos reales
-    // try {
-    //   const response = await api.get('/admin/users', { params: { ...filters.value, ...pagination.value } })
-    //   users.value = response.data.data
-    //   pagination.value = response.data.meta
-    // } catch (error) {
-    //   console.log('Usando datos mock para usuarios:', error.message)
-    // }
+
+    const response = await api.get('/admin/users', {
+      params: {
+        search: filters.value.search || undefined,
+        role: filters.value.role || undefined,
+        status: filters.value.status || undefined,
+        per_page: pagination.value.rowsPerPage,
+        page: pagination.value.page,
+      },
+    })
+
+    users.value = response.data.data || []
+    pagination.value.rowsNumber = response.data.meta?.total || 0
   } catch (error) {
     console.error('Error cargando usuarios:', error)
     $q.notify({
@@ -374,8 +359,7 @@ async function deleteUser() {
   if (!selectedUser.value) return
   
   try {
-    // TODO: Implementar eliminación real
-    // await api.delete(`/admin/users/${selectedUser.value.id}`)
+    await api.delete(`/admin/users/${selectedUser.value.id}`)
     
     $q.notify({
       type: 'positive',

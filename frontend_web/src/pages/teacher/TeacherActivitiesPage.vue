@@ -2,10 +2,13 @@
   <q-page class="q-pa-xl page-wrap">
     <div class="row items-center justify-between q-mb-lg">
       <div>
-        <h2 class="q-mb-xs">Gestor de Actividades</h2>
-        <p class="q-mb-none">Configura actividades interactivas por lección usando la API real.</p>
+        <h2 class="q-mb-xs">Gestor de Medios y Actividades</h2>
+        <p class="q-mb-none">Aquí afinas la gamificación; los videos y documentos pesados se cargan desde el Course Builder 2.0.</p>
       </div>
-      <q-btn color="primary" no-caps icon="add" label="Nueva actividad" @click="openDialog()" :disable="!selectedCourseId" />
+      <div class="row q-gutter-sm">
+        <q-btn flat no-caps color="secondary" icon="account_tree" label="Ir al Builder" @click="router.push({ name: 'teacher-courses' })" />
+        <q-btn color="primary" no-caps icon="add" label="Nueva actividad" @click="openDialog()" :disable="!selectedCourseId" />
+      </div>
     </div>
 
     <q-card class="glass-card q-pa-md q-mb-lg">
