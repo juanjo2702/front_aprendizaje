@@ -98,25 +98,7 @@
                 />
               </div>
 
-              <!-- Alcance del examen final -->
               <div class="col-12" v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam">
-                <div class="text-caption text-grey-4 q-mb-sm">Alcance del examen final</div>
-                <q-option-group
-                  v-model="certificationForm.certificate_exam_scope"
-                  :options="[
-                    { label: 'Lección específica (una actividad como examen)', value: 'lesson' },
-                    { label: 'Todo el curso (promedio de todas las actividades del curso)', value: 'course' },
-                  ]"
-                  color="secondary"
-                  dense
-                />
-              </div>
-
-              <!-- Selector de lección (solo si scope = lesson) -->
-              <div
-                class="col-12"
-                v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam && certificationForm.certificate_exam_scope === 'lesson'"
-              >
                 <q-select
                   v-model="certificationForm.certificate_final_lesson_id"
                   :options="interactiveLessonOptions"
@@ -126,20 +108,8 @@
                   dense
                   clearable
                   label="Lección usada como examen final"
-                  hint="Crea primero una lección de tipo Actividad y luego selecciónala aquí."
+                  hint="Crea una lección de tipo Actividad, entra a editarla y allí podrás importar preguntas de todo el curso."
                 />
-              </div>
-
-              <!-- Aviso cuando scope = course -->
-              <div
-                class="col-12"
-                v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam && certificationForm.certificate_exam_scope === 'course'"
-              >
-                <q-banner rounded class="bg-dark text-grey-3">
-                  <q-icon name="info" class="q-mr-sm" />
-                  El sistema calculará el promedio de <strong>todas las actividades interactivas del curso</strong>
-                  (de todos los módulos) para verificar si el estudiante supera el puntaje mínimo.
-                </q-banner>
               </div>
             </div>
           </div>
@@ -160,7 +130,7 @@
                 {{
                   selectedFinalExamLabel
                     ? `Examen final: ${selectedFinalExamLabel}.`
-                    : 'Todavía no se configuró el examen final.'
+                    : 'Todavía no seleccionaste la lección para el examen final.'
                 }}
               </div>
             </q-banner>
@@ -400,7 +370,8 @@
                   dense
                 />
               </div>
-              <div class="col-12 col-md-8 row items-center justify-end">
+              <div class="col-12 col-md-8 row items-center justify-end q-gutter-sm">
+                <q-btn flat no-caps color="primary" icon="list_alt" label="Banco de preguntas" @click="importTriviaBank" />
                 <q-btn flat no-caps color="secondary" icon="auto_fix_high" label="Cargar plantilla" @click="applyInteractiveTemplate" />
               </div>
               <div class="col-12">
@@ -515,10 +486,9 @@ const interactiveLessonOptions = computed(() =>
       })),
   ),
 )
-const selectedFinalExamLabel = computed(() => {
-  if (certificationForm.value.certificate_exam_scope === 'course') return 'Todo el curso (promedio de todas las actividades)'
-  return interactiveLessonOptions.value.find((option) => option.value === certificationForm.value.certificate_final_lesson_id)?.label || ''
-})
+const selectedFinalExamLabel = computed(
+  () => interactiveLessonOptions.value.find((option) => option.value === certificationForm.value.certificate_final_lesson_id)?.label || '',
+)
 
 const activityHint = computed(() => {
   if (lessonForm.value.activity_type === 'matching') {
@@ -738,6 +708,64 @@ function closeLessonDialog() {
     selectedModule.value = null
     lessonForm.value = emptyLesson()
   }
+}
+
+function importTriviaBank() {
+  const currentEditingId = editingLesson.value?.id
+
+  // Extraer todas las preguntas del curso excepto la lección actual
+  const allQuestions = (structure.value?.modules || []).flatMap((module) =>
+    (module.lessons || [])
+      .filter((l) => l.type === 'interactive' && l.id !== currentEditingId)
+      .flatMap((l) => {
+        const payload = l.interactiveConfig?.config_payload || l.contentable?.config_payload
+        return Array.isArray(payload?.questions) ? payload.questions : []
+      })
+  )
+
+  if (allQuestions.length === 0) {
+    $q.notify({ type: 'warning', message: 'No hay preguntas de Trivia en otras lecciones de este curso.' })
+    return
+  }
+
+  $q.dialog({
+    title: 'Banco de preguntas del curso',
+    message: 'Selecciona las preguntas que deseas importar a esta actividad:',
+    options: {
+      type: 'checkbox',
+      model: [],
+      items: allQuestions.map((q, idx) => ({
+        label: q.prompt || `Pregunta ${idx + 1}`,
+        value: JSON.stringify(q),
+      })),
+    },
+    cancel: true,
+    persistent: true,
+    ok: { label: 'Importar seleccionadas', color: 'primary', noCaps: true },
+    cancel: { label: 'Cancelar', color: 'grey-8', flat: true, noCaps: true },
+  }).onOk((selectedJsonStrings) => {
+    if (!selectedJsonStrings || selectedJsonStrings.length === 0) return
+
+    try {
+      const selectedQs = selectedJsonStrings.map((str) => JSON.parse(str))
+      const currentConfig = JSON.parse(lessonForm.value.interactive_config_text || '{}')
+      
+      if (!Array.isArray(currentConfig.questions)) {
+        currentConfig.questions = []
+      }
+
+      const nextIdBase = currentConfig.questions.length + 1
+      selectedQs.forEach((q, idx) => {
+        const clonedQ = { ...q, id: nextIdBase + idx }
+        currentConfig.questions.push(clonedQ)
+      })
+
+      lessonForm.value.interactive_config_text = JSON.stringify(currentConfig, null, 2)
+      $q.notify({ type: 'positive', message: `Se importaron ${selectedQs.length} preguntas correctamente.` })
+    } catch (e) {
+      $q.notify({ type: 'negative', message: 'Ocurrió un error al procesar el JSON.' })
+    }
+  })
 }
 
 function applyInteractiveTemplate() {
