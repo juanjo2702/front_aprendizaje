@@ -66,6 +66,120 @@
         Si la lección es de tipo <strong>Actividad</strong>, se activa el editor gamificado con intentos, XP y preview.
       </q-banner>
 
+      <q-card class="hero-summary q-pa-lg q-mb-lg">
+        <div class="row q-col-gutter-lg items-start">
+          <div class="col-12 col-lg-7">
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">Ruta de certificación</div>
+            <div class="text-body2 text-grey-4 q-mb-md">
+              Define si este curso entrega certificado, el puntaje mínimo y si además exige aprobar un examen final
+              creado dentro de la plataforma.
+            </div>
+
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-md-4">
+                <q-toggle v-model="certificationForm.has_certificate" color="secondary" label="Emitir certificado" />
+              </div>
+              <div class="col-12 col-md-4" v-if="certificationForm.has_certificate">
+                <q-toggle
+                  v-model="certificationForm.certificate_requires_final_exam"
+                  color="warning"
+                  label="Exigir examen final"
+                />
+              </div>
+              <div class="col-12 col-md-4" v-if="certificationForm.has_certificate">
+                <q-input
+                  v-model.number="certificationForm.certificate_min_score"
+                  type="number"
+                  min="0"
+                  max="100"
+                  label="Puntaje mínimo (%)"
+                  outlined
+                  dense
+                />
+              </div>
+
+              <!-- Alcance del examen final -->
+              <div class="col-12" v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam">
+                <div class="text-caption text-grey-4 q-mb-sm">Alcance del examen final</div>
+                <q-option-group
+                  v-model="certificationForm.certificate_exam_scope"
+                  :options="[
+                    { label: 'Lección específica (una actividad como examen)', value: 'lesson' },
+                    { label: 'Todo el curso (promedio de todas las actividades del curso)', value: 'course' },
+                  ]"
+                  color="secondary"
+                  dense
+                />
+              </div>
+
+              <!-- Selector de lección (solo si scope = lesson) -->
+              <div
+                class="col-12"
+                v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam && certificationForm.certificate_exam_scope === 'lesson'"
+              >
+                <q-select
+                  v-model="certificationForm.certificate_final_lesson_id"
+                  :options="interactiveLessonOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  clearable
+                  label="Lección usada como examen final"
+                  hint="Crea primero una lección de tipo Actividad y luego selecciónala aquí."
+                />
+              </div>
+
+              <!-- Aviso cuando scope = course -->
+              <div
+                class="col-12"
+                v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam && certificationForm.certificate_exam_scope === 'course'"
+              >
+                <q-banner rounded class="bg-dark text-grey-3">
+                  <q-icon name="info" class="q-mr-sm" />
+                  El sistema calculará el promedio de <strong>todas las actividades interactivas del curso</strong>
+                  (de todos los módulos) para verificar si el estudiante supera el puntaje mínimo.
+                </q-banner>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            <q-banner
+              rounded
+              :class="certificationForm.has_certificate ? 'bg-dark text-grey-3' : 'bg-grey-10 text-grey-5'"
+            >
+              <div class="text-weight-medium q-mb-sm">Estado actual</div>
+              <div v-if="certificationForm.has_certificate">
+                Certificado activo con mínimo de {{ certificationForm.certificate_min_score || 0 }}%.
+              </div>
+              <div v-else>
+                Este curso aún no entrega certificado.
+              </div>
+              <div v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam" class="q-mt-sm">
+                {{
+                  selectedFinalExamLabel
+                    ? `Examen final: ${selectedFinalExamLabel}.`
+                    : 'Todavía no se configuró el examen final.'
+                }}
+              </div>
+            </q-banner>
+
+            <div class="row justify-end q-mt-md">
+              <q-btn
+                color="primary"
+                no-caps
+                icon="verified"
+                label="Guardar ruta de certificación"
+                :loading="certificationSaving"
+                :disable="!course?.id"
+                @click="saveCertificationSettings"
+              />
+            </div>
+          </div>
+        </div>
+      </q-card>
+
       <div v-if="loading" class="q-py-md">
         <q-skeleton v-for="n in 3" :key="n" type="rect" height="150px" class="q-mb-md" dark />
       </div>
@@ -212,7 +326,7 @@
               <q-toggle v-model="lessonForm.is_free" label="Vista libre" color="secondary" />
             </div>
 
-            <div class="col-12 col-md-4" v-if="['video', 'resource'].includes(lessonForm.type)">
+            <div v-if="['video', 'resource'].includes(lessonForm.type)" class="col-12 col-md-4">
               <q-select
                 v-model="lessonForm.source_mode"
                 :options="sourceModeOptions"
@@ -224,15 +338,15 @@
               />
             </div>
 
-            <div class="col-12 col-md-4" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'">
+            <div v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'" class="col-12 col-md-4">
               <q-input v-model="lessonForm.provider" label="Proveedor" outlined dense />
             </div>
 
-            <div class="col-12" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'">
+            <div v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'external'" class="col-12">
               <q-input v-model="lessonForm.content_url" label="URL del video" outlined dense />
             </div>
 
-            <div class="col-12" v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'local'">
+            <div v-if="lessonForm.type === 'video' && lessonForm.source_mode === 'local'" class="col-12">
               <VideoUploader
                 v-model="lessonForm.video_upload_token"
                 endpoint="/teacher/upload-video"
@@ -243,11 +357,11 @@
               />
             </div>
 
-            <div class="col-12" v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'external'">
+            <div v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'external'" class="col-12">
               <q-input v-model="lessonForm.content_url" label="URL del documento/recurso" outlined dense />
             </div>
 
-            <div class="col-12" v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'local'">
+            <div v-if="lessonForm.type === 'resource' && lessonForm.source_mode === 'local'" class="col-12">
               <VideoUploader
                 v-model="lessonForm.resource_upload_token"
                 endpoint="/teacher/upload-resource"
@@ -259,7 +373,18 @@
               />
             </div>
 
-            <div class="col-12" v-if="lessonForm.type === 'reading'">
+            <div v-if="lessonForm.type === 'resource'" class="col-12">
+              <q-input
+                v-model="lessonForm.content_text"
+                type="textarea"
+                label="Descripción del recurso"
+                outlined
+                autogrow
+                hint="Úsala para explicar qué contiene el archivo y cuándo debe usarlo el estudiante."
+              />
+            </div>
+
+            <div v-if="lessonForm.type === 'reading'" class="col-12">
               <q-input v-model="lessonForm.content_text" type="textarea" label="Contenido de lectura" outlined autogrow />
             </div>
 
@@ -327,6 +452,7 @@ import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityD
 import TeacherActivitySettingsPanel from 'src/components/teacher/TeacherActivitySettingsPanel.vue'
 import VideoUploader from 'src/components/teacher/VideoUploader.vue'
 import { api } from 'src/services/api'
+import { buildDefaultActivityConfig } from 'src/utils/activityTemplates'
 
 const props = defineProps({
   courseId: { type: [String, Number], required: true },
@@ -337,6 +463,7 @@ const router = useRouter()
 const loading = ref(true)
 const moduleSaving = ref(false)
 const lessonSaving = ref(false)
+const certificationSaving = ref(false)
 const reordering = ref(false)
 const structure = ref(null)
 const moduleDialog = ref(false)
@@ -348,6 +475,7 @@ const draggedModuleId = ref(null)
 const draggedLesson = ref(null)
 const moduleForm = ref(emptyModule())
 const lessonForm = ref(emptyLesson())
+const certificationForm = ref(emptyCertificationForm())
 
 const lessonTypeOptions = [
   { label: 'Video', value: 'video' },
@@ -377,6 +505,20 @@ const interactiveLessons = computed(() =>
     0,
   ),
 )
+const interactiveLessonOptions = computed(() =>
+  (structure.value?.modules || []).flatMap((module) =>
+    (module.lessons || [])
+      .filter((lesson) => lesson.type === 'interactive')
+      .map((lesson) => ({
+        label: `${module.title} · ${lesson.title}`,
+        value: lesson.id,
+      })),
+  ),
+)
+const selectedFinalExamLabel = computed(() => {
+  if (certificationForm.value.certificate_exam_scope === 'course') return 'Todo el curso (promedio de todas las actividades)'
+  return interactiveLessonOptions.value.find((option) => option.value === certificationForm.value.certificate_final_lesson_id)?.label || ''
+})
 
 const activityHint = computed(() => {
   if (lessonForm.value.activity_type === 'matching') {
@@ -392,6 +534,16 @@ const activityHint = computed(() => {
 
 function emptyModule() {
   return { title: '', description: '', sort_order: 1 }
+}
+
+function emptyCertificationForm() {
+  return {
+    has_certificate: false,
+    certificate_requires_final_exam: false,
+    certificate_exam_scope: 'lesson',
+    certificate_min_score: 70,
+    certificate_final_lesson_id: null,
+  }
 }
 
 function emptyLesson() {
@@ -412,52 +564,7 @@ function emptyLesson() {
     passing_score: 70,
     xp_reward: 100,
     coin_reward: 25,
-    interactive_config_text: JSON.stringify(defaultInteractiveConfig('trivia'), null, 2),
-  }
-}
-
-function defaultInteractiveConfig(activityType = 'trivia') {
-  if (activityType === 'matching') {
-    return {
-      title: 'Relaciona conceptos y definiciones',
-      description: 'Empareja cada concepto con su definición correcta.',
-      points_per_pair: 10,
-      pairs: [
-        { id: 1, left: 'API', right: 'Interfaz para comunicar sistemas' },
-        { id: 2, left: 'Frontend', right: 'Capa visual de la app' },
-        { id: 3, left: 'Backend', right: 'Lógica y datos del servidor' },
-      ],
-    }
-  }
-
-  if (activityType === 'crossword') {
-    return {
-      title: 'Crucigrama de conceptos base',
-      description: 'Completa el tablero con las pistas correctas.',
-      rows: 5,
-      cols: 6,
-      points_per_word: 10,
-      entries: [
-        { id: 1, row: 0, col: 0, direction: 'across', clue: 'Interfaz para comunicar sistemas', answer: 'API' },
-        { id: 2, row: 0, col: 0, direction: 'down', clue: 'Aplicación web progresiva', answer: 'PWA' },
-      ],
-    }
-  }
-
-  return {
-    title: 'Actividad interactiva',
-    description: 'Configura preguntas y respuestas.',
-    questions: [
-      {
-        id: 1,
-        prompt: 'Pregunta de ejemplo',
-        options: [
-          { id: 'a', text: 'Respuesta correcta', is_correct: true },
-          { id: 'b', text: 'Respuesta distractora', is_correct: false },
-        ],
-        points: 10,
-      },
-    ],
+    interactive_config_text: JSON.stringify(buildDefaultActivityConfig('trivia'), null, 2),
   }
 }
 
@@ -498,7 +605,7 @@ function lessonSummary(lesson) {
   }
 
   if (lesson.type === 'resource') {
-    return lesson.contentable?.file_name || lesson.content_url || 'Documento sin adjunto todavía.'
+    return lesson.content_text || lesson.contentable?.metadata?.description || lesson.contentable?.file_name || lesson.content_url || 'Documento sin adjunto todavía.'
   }
 
   return lesson.contentable?.provider === 'local'
@@ -512,6 +619,13 @@ async function loadStructure() {
   try {
     const { data } = await api.get(`/instructor/courses/${props.courseId}/structure`)
     structure.value = data
+    certificationForm.value = {
+      has_certificate: Boolean(data?.has_certificate),
+      certificate_requires_final_exam: Boolean(data?.certificate_requires_final_exam),
+      certificate_exam_scope: data?.certificate_exam_scope || 'lesson',
+      certificate_min_score: Number(data?.certificate_min_score || 70),
+      certificate_final_lesson_id: data?.certificate_final_lesson_id || null,
+    }
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -548,6 +662,8 @@ function closeModuleDialog() {
 
 async function saveModule() {
   moduleSaving.value = true
+  let savedOk = false
+  let wasEditing = !!editingModule.value
 
   try {
     const payload = {
@@ -560,11 +676,7 @@ async function saveModule() {
     else await api.post(`/courses/${props.courseId}/modules`, payload)
 
     await loadStructure()
-    closeModuleDialog()
-    $q.notify({
-      type: 'positive',
-      message: editingModule.value ? 'Módulo actualizado correctamente.' : 'Módulo creado correctamente.',
-    })
+    savedOk = true
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -572,6 +684,13 @@ async function saveModule() {
     })
   } finally {
     moduleSaving.value = false
+    if (savedOk) {
+      closeModuleDialog()
+      $q.notify({
+        type: 'positive',
+        message: wasEditing ? 'Módulo actualizado correctamente.' : 'Módulo creado correctamente.',
+      })
+    }
   }
 }
 
@@ -582,7 +701,7 @@ function openLessonDialog(module, lesson = null) {
   const interactiveConfig =
     lesson?.interactiveConfig?.config_payload ||
     lesson?.contentable?.config_payload ||
-    defaultInteractiveConfig(activityType)
+    buildDefaultActivityConfig(activityType)
 
   lessonForm.value = lesson
     ? {
@@ -591,9 +710,9 @@ function openLessonDialog(module, lesson = null) {
         duration: Number(lesson.duration || 0),
         sort_order: Number(lesson.sort_order || 1),
         is_free: Boolean(lesson.is_free),
-        content_url: lesson.content_url || lesson.contentable?.video_url || lesson.contentable?.file_url || '',
-        content_text: lesson.content_text || lesson.contentable?.body_markdown || '',
-        source_mode: lesson.contentable?.provider === 'local' || lesson.contentable?.metadata?.upload_token ? 'local' : 'external',
+      content_url: lesson.content_url || lesson.contentable?.video_url || lesson.contentable?.file_url || '',
+      content_text: lesson.content_text || lesson.contentable?.metadata?.description || lesson.contentable?.body_markdown || '',
+      source_mode: lesson.contentable?.provider === 'local' || lesson.contentable?.metadata?.upload_token ? 'local' : 'external',
         provider: lesson.contentable?.provider || 'external',
         video_upload_token: '',
         resource_upload_token: '',
@@ -623,7 +742,7 @@ function closeLessonDialog() {
 
 function applyInteractiveTemplate() {
   lessonForm.value.interactive_config_text = JSON.stringify(
-    defaultInteractiveConfig(lessonForm.value.activity_type || 'trivia'),
+    buildDefaultActivityConfig(lessonForm.value.activity_type || 'trivia'),
     null,
     2,
   )
@@ -631,7 +750,7 @@ function applyInteractiveTemplate() {
 
 function parseJsonText(text) {
   try {
-    return text?.trim() ? JSON.parse(text) : defaultInteractiveConfig(lessonForm.value.activity_type || 'trivia')
+    return text?.trim() ? JSON.parse(text) : buildDefaultActivityConfig(lessonForm.value.activity_type || 'trivia')
   } catch {
     throw new Error('La configuración JSON de la actividad no es válida.')
   }
@@ -668,6 +787,7 @@ function serializeLessonPayload() {
       throw new Error('Debes adjuntar un documento antes de guardar la lección.')
     }
 
+    payload.content_text = lessonForm.value.content_text?.trim() || null
     payload.resource_upload_token = lessonForm.value.source_mode === 'local'
       ? (lessonForm.value.resource_upload_token || null)
       : null
@@ -693,6 +813,8 @@ async function saveLesson() {
   if (!selectedModule.value) return
 
   lessonSaving.value = true
+  let savedOk = false
+  let wasEditing = !!editingLesson.value
 
   try {
     const payload = serializeLessonPayload()
@@ -701,11 +823,7 @@ async function saveLesson() {
     else await api.post(`/modules/${selectedModule.value.id}/lessons`, payload)
 
     await loadStructure()
-    closeLessonDialog()
-    $q.notify({
-      type: 'positive',
-      message: editingLesson.value ? 'Lección actualizada correctamente.' : 'Lección creada correctamente.',
-    })
+    savedOk = true
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -713,6 +831,13 @@ async function saveLesson() {
     })
   } finally {
     lessonSaving.value = false
+    if (savedOk) {
+      closeLessonDialog()
+      $q.notify({
+        type: 'positive',
+        message: wasEditing ? 'Lección actualizada correctamente.' : 'Lección creada correctamente.',
+      })
+    }
   }
 }
 
@@ -800,6 +925,46 @@ async function toggleCourseStatus() {
       type: 'negative',
       message: formatError(error, 'No se pudo actualizar el estado del curso.'),
     })
+  }
+}
+
+async function saveCertificationSettings() {
+  if (!course.value?.id) return
+
+  certificationSaving.value = true
+
+  try {
+    const requiresFinalExam = Boolean(
+      certificationForm.value.has_certificate && certificationForm.value.certificate_requires_final_exam,
+    )
+    const examScope = certificationForm.value.certificate_exam_scope || 'lesson'
+
+    const payload = {
+      has_certificate: Boolean(certificationForm.value.has_certificate),
+      certificate_requires_final_exam: requiresFinalExam,
+      certificate_exam_scope: requiresFinalExam ? examScope : 'lesson',
+      certificate_min_score: Number(certificationForm.value.certificate_min_score || 70),
+      certificate_final_lesson_id:
+        requiresFinalExam && examScope === 'lesson'
+          ? (certificationForm.value.certificate_final_lesson_id || null)
+          : null,
+    }
+
+    await api.put(`/courses/${course.value.id}`, payload)
+    await loadStructure()
+    $q.notify({
+      type: 'positive',
+      message: payload.has_certificate
+        ? 'Ruta de certificación guardada correctamente.'
+        : 'El certificado quedó desactivado para este curso.',
+    })
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: formatError(error, 'No se pudo guardar la configuración del certificado.'),
+    })
+  } finally {
+    certificationSaving.value = false
   }
 }
 

@@ -43,41 +43,96 @@ const routes = [
         path: 'dashboard',
         name: 'student-dashboard',
         component: () => import('pages/student/StudentDashboardPage.vue'),
+        meta: {
+          studentTitle: 'Dashboard estudiantil',
+          studentCrumbs: [{ label: 'Dashboard' }],
+        },
       },
       {
         path: 'marketplace',
         name: 'student-marketplace',
         component: () => import('pages/student/StudentMarketplacePage.vue'),
+        meta: {
+          studentTitle: 'Marketplace',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Marketplace' },
+          ],
+        },
       },
       {
         path: 'shop',
         name: 'student-shop',
         component: () => import('pages/student/StudentShopPage.vue'),
+        meta: {
+          studentTitle: 'Coin Shop',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Coin Shop' },
+          ],
+        },
       },
       {
         path: 'marketplace/:slug',
         name: 'student-course-detail',
         component: () => import('pages/student/StudentCourseDetailPage.vue'),
+        meta: {
+          studentTitle: 'Detalle del curso',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Marketplace', to: { name: 'student-marketplace' } },
+            { label: 'Detalle del curso' },
+          ],
+        },
       },
       {
         path: 'my-learning',
         name: 'student-my-learning',
         component: () => import('pages/student/StudentMyLearningPage.vue'),
+        meta: {
+          studentTitle: 'Mi aprendizaje',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Mi aprendizaje' },
+          ],
+        },
       },
       {
         path: 'learn/:lessonId',
         name: 'student-learning',
         component: () => import('pages/student/StudentLearningPlayerPage.vue'),
+        meta: {
+          studentTitle: 'Learning Player',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Mi aprendizaje', to: { name: 'student-my-learning' } },
+            { label: 'Lección' },
+          ],
+        },
       },
       {
         path: 'inventory',
         name: 'student-inventory',
         component: () => import('pages/student/StudentInventoryPage.vue'),
+        meta: {
+          studentTitle: 'Inventario',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Inventario' },
+          ],
+        },
       },
       {
         path: 'certificates',
         name: 'student-certificates-vault',
         component: () => import('pages/student/StudentCertificatesVaultPage.vue'),
+        meta: {
+          studentTitle: 'Bóveda de certificados',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Certificados' },
+          ],
+        },
       },
     ],
   },

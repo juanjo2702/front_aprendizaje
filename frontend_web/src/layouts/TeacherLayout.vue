@@ -53,16 +53,16 @@
                 </q-item-section>
               </q-item>
               <q-separator dark />
-              <q-item clickable v-close-popup :to="{ name: 'teacher-dashboard' }">
+              <q-item v-close-popup clickable :to="{ name: 'teacher-dashboard' }">
                 <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
                 <q-item-section>Dashboard docente</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup :to="{ name: 'public-catalog' }">
+              <q-item v-close-popup clickable :to="{ name: 'public-catalog' }">
                 <q-item-section avatar><q-icon name="visibility" /></q-item-section>
                 <q-item-section>Vista pública</q-item-section>
               </q-item>
               <q-separator dark />
-              <q-item clickable v-close-popup @click="logout">
+              <q-item v-close-popup clickable @click="logout">
                 <q-item-section avatar><q-icon name="logout" color="negative" /></q-item-section>
                 <q-item-section class="text-negative">Cerrar sesión</q-item-section>
               </q-item>
@@ -143,7 +143,7 @@
         <section class="teacher-crumb-bar q-px-lg q-py-md">
           <div class="row items-center justify-between q-col-gutter-md">
             <div class="col-12 col-lg-auto row items-center q-gutter-sm">
-              <TeacherBackButton v-if="showBackButton" />
+              <AppBackButton v-if="showBackButton" :fallback-route="{ name: 'teacher-dashboard' }" />
               <q-breadcrumbs class="text-grey-5">
                 <q-breadcrumbs-el
                   v-for="(crumb, index) in teacherBreadcrumbs"
@@ -170,7 +170,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
-import TeacherBackButton from 'src/components/teacher/TeacherBackButton.vue'
+import AppBackButton from 'src/components/shared/AppBackButton.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()
@@ -323,5 +323,15 @@ watch(
   background: rgba(12, 13, 29, 0.82);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(118, 122, 180, 0.12);
+}
+
+@media (max-width: 768px) {
+  .drawer-shell {
+    padding: 16px 12px;
+  }
+
+  .teacher-crumb-bar {
+    top: 68px;
+  }
 }
 </style>

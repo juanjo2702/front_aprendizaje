@@ -53,16 +53,16 @@
                 </q-item-section>
               </q-item>
               <q-separator dark />
-              <q-item clickable v-close-popup :to="{ name: 'admin-dashboard' }">
+              <q-item v-close-popup clickable :to="{ name: 'admin-dashboard' }">
                 <q-item-section avatar><q-icon name="space_dashboard" /></q-item-section>
                 <q-item-section>Dashboard admin</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup :to="{ name: 'teacher-dashboard' }">
+              <q-item v-close-popup clickable :to="{ name: 'teacher-dashboard' }">
                 <q-item-section avatar><q-icon name="switch_account" /></q-item-section>
                 <q-item-section>Ir a docente</q-item-section>
               </q-item>
               <q-separator dark />
-              <q-item clickable v-close-popup @click="logout">
+              <q-item v-close-popup clickable @click="logout">
                 <q-item-section avatar><q-icon name="logout" color="negative" /></q-item-section>
                 <q-item-section class="text-negative">Cerrar sesión</q-item-section>
               </q-item>
@@ -123,7 +123,7 @@
         <section class="admin-crumb-bar q-px-lg q-py-md">
           <div class="row items-center justify-between q-col-gutter-md">
             <div class="col-12 col-lg-auto row items-center q-gutter-sm">
-              <AdminBackButton v-if="showBackButton" />
+              <AppBackButton v-if="showBackButton" :fallback-route="{ name: 'admin-dashboard' }" />
               <q-breadcrumbs class="text-grey-5">
                 <q-breadcrumbs-el
                   v-for="(crumb, index) in adminBreadcrumbs"
@@ -150,7 +150,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
-import AdminBackButton from 'src/components/admin/AdminBackButton.vue'
+import AppBackButton from 'src/components/shared/AppBackButton.vue'
 
 const $q = useQuasar()
 const auth = useAuthStore()
@@ -299,6 +299,10 @@ watch(
   background: transparent;
 }
 
+.admin-page-shell {
+  min-height: 100%;
+}
+
 .admin-crumb-bar {
   position: sticky;
   top: 64px;
@@ -306,5 +310,15 @@ watch(
   background: rgba(8, 15, 29, 0.84);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(93, 122, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+  .drawer-shell {
+    padding: 16px 12px;
+  }
+
+  .admin-crumb-bar {
+    top: 68px;
+  }
 }
 </style>

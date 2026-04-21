@@ -213,6 +213,16 @@
                   :max-bytes="536870912"
                 />
               </div>
+              <div class="col-12" v-if="lessonForm.type === 'resource'">
+                <q-input
+                  v-model="lessonForm.content_text"
+                  type="textarea"
+                  label="Descripción del recurso"
+                  outlined
+                  autogrow
+                  hint="Explica para qué sirve el archivo y en qué momento debe consultarlo el estudiante."
+                />
+              </div>
               <div class="col-12" v-if="lessonForm.type === 'reading'">
                 <q-input
                   v-model="lessonForm.content_text"
@@ -294,6 +304,7 @@ import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityD
 import TeacherActivitySettingsPanel from 'src/components/teacher/TeacherActivitySettingsPanel.vue'
 import VideoUploader from 'src/components/teacher/VideoUploader.vue'
 import { api } from 'src/services/api'
+import { buildDefaultActivityConfig } from 'src/utils/activityTemplates'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -366,56 +377,7 @@ function emptyLesson() {
     passing_score: 70,
     xp_reward: 100,
     coin_reward: 25,
-    interactive_config_text: JSON.stringify(defaultInteractiveConfig('trivia'), null, 2),
-  }
-}
-
-function defaultInteractiveConfig(activityType = 'trivia') {
-  if (activityType === 'matching') {
-    return {
-      title: 'Relaciona conceptos y definiciones',
-      description: 'Empareja cada concepto con su definición correcta.',
-      points_per_pair: 10,
-      pairs: [
-        { id: 1, left: 'Variable', right: 'Espacio que almacena un valor' },
-        { id: 2, left: 'Función', right: 'Bloque de código reutilizable' },
-        { id: 3, left: 'Array', right: 'Colección ordenada de elementos' },
-      ],
-    }
-  }
-
-  if (activityType === 'crossword') {
-    return {
-      title: 'Crucigrama de conceptos base',
-      description: 'Completa el tablero usando las pistas horizontales y verticales.',
-      rows: 5,
-      cols: 6,
-      points_per_word: 10,
-      entries: [
-        { id: 1, row: 0, col: 0, direction: 'across', clue: 'Interfaz para comunicar sistemas', answer: 'API' },
-        { id: 2, row: 0, col: 0, direction: 'down', clue: 'Aplicación instalada en un dispositivo', answer: 'APP' },
-        { id: 3, row: 0, col: 2, direction: 'down', clue: 'Sigla corta de inteligencia artificial', answer: 'IA' },
-        { id: 4, row: 2, col: 3, direction: 'across', clue: 'Modelo de objetos del documento', answer: 'DOM' },
-        { id: 5, row: 2, col: 5, direction: 'down', clue: 'Función que asocia un valor a otro', answer: 'MAP' },
-        { id: 6, row: 4, col: 0, direction: 'across', clue: 'Aplicación web progresiva', answer: 'PWA' },
-      ],
-    }
-  }
-
-  return {
-    title: 'Actividad interactiva',
-    description: 'Configura preguntas y respuestas.',
-    questions: [
-      {
-        id: 1,
-        prompt: 'Pregunta de ejemplo',
-        options: [
-          { id: 'a', text: 'Respuesta correcta', is_correct: true },
-          { id: 'b', text: 'Respuesta distractora', is_correct: false },
-        ],
-        points: 10,
-      },
-    ],
+    interactive_config_text: JSON.stringify(buildDefaultActivityConfig('trivia'), null, 2),
   }
 }
 
@@ -447,6 +409,9 @@ function lessonSummary(lesson) {
     return `${config.activity_type || 'Actividad interactiva'} · ${config.max_attempts || 3} intentos · ${config.xp_reward || 0} XP · ${config.coin_reward || 0} monedas`
   }
   if (lesson.type === 'resource') {
+    if (lesson.content_text || lesson.contentable?.metadata?.description) {
+      return lesson.content_text || lesson.contentable?.metadata?.description
+    }
     if (lesson.contentable?.metadata?.upload_token) return 'Recurso local protegido adjunto.'
     return lesson.content_url || lesson.contentable?.file_url || 'Recurso sin URL.'
   }
@@ -458,7 +423,7 @@ function lessonSummary(lesson) {
 
 function applyInteractiveTemplate() {
   lessonForm.value.interactive_config_text = JSON.stringify(
-    defaultInteractiveConfig(lessonForm.value.activity_type || 'trivia'),
+    buildDefaultActivityConfig(lessonForm.value.activity_type || 'trivia'),
     null,
     2,
   )
@@ -504,6 +469,8 @@ function closeModuleDialog() {
 async function saveModule() {
   if (!props.course?.id) return
   moduleSaving.value = true
+  let savedOk = false
+  let wasEditing = !!editingModule.value
   try {
     const payload = {
       title: moduleForm.value.title?.trim(),
@@ -514,15 +481,18 @@ async function saveModule() {
     else await api.post(`/courses/${props.course.id}/modules`, payload)
     await loadStructure()
     emit('changed')
-    closeModuleDialog()
-    $q.notify({
-      type: 'positive',
-      message: editingModule.value ? 'Módulo actualizado correctamente.' : 'Módulo creado correctamente.',
-    })
+    savedOk = true
   } catch (error) {
     $q.notify({ type: 'negative', message: formatError(error, 'No se pudo guardar el módulo.') })
   } finally {
     moduleSaving.value = false
+    if (savedOk) {
+      closeModuleDialog()
+      $q.notify({
+        type: 'positive',
+        message: wasEditing ? 'Módulo actualizado correctamente.' : 'Módulo creado correctamente.',
+      })
+    }
   }
 }
 
@@ -533,7 +503,7 @@ function openLessonDialog(module, lesson = null) {
   const interactiveConfig =
     lesson?.interactiveConfig?.config_payload ||
     lesson?.contentable?.config_payload ||
-    defaultInteractiveConfig(activityType)
+    buildDefaultActivityConfig(activityType)
 
   lessonForm.value = lesson
     ? {
@@ -543,7 +513,7 @@ function openLessonDialog(module, lesson = null) {
         sort_order: Number(lesson.sort_order || 0),
         is_free: Boolean(lesson.is_free),
         content_url: lesson.content_url || lesson.contentable?.video_url || lesson.contentable?.file_url || '',
-        content_text: lesson.content_text || lesson.contentable?.body_markdown || '',
+        content_text: lesson.content_text || lesson.contentable?.metadata?.description || lesson.contentable?.body_markdown || '',
         source_mode: lesson.contentable?.provider === 'local' || lesson.contentable?.metadata?.upload_token ? 'local' : 'external',
         provider: lesson.contentable?.provider || 'external',
         video_upload_token: '',
@@ -573,7 +543,7 @@ function closeLessonDialog() {
 
 function parseJsonText(text) {
   try {
-    return text?.trim() ? JSON.parse(text) : defaultInteractiveConfig(lessonForm.value.activity_type || 'trivia')
+    return text?.trim() ? JSON.parse(text) : buildDefaultActivityConfig(lessonForm.value.activity_type || 'trivia')
   } catch {
     throw new Error('La configuración JSON de la actividad no es válida.')
   }
@@ -601,6 +571,7 @@ function serializeLessonPayload() {
     if (lessonForm.value.source_mode === 'local' && !lessonForm.value.resource_upload_token && !lessonForm.value.content_url) {
       throw new Error('Debes adjuntar un archivo antes de guardar el recurso.')
     }
+    payload.content_text = lessonForm.value.content_text?.trim() || null
     payload.resource_upload_token = lessonForm.value.source_mode === 'local' ? lessonForm.value.resource_upload_token || null : null
   }
   if (lessonForm.value.type === 'reading') payload.content_text = lessonForm.value.content_text?.trim() || ''
@@ -618,21 +589,26 @@ function serializeLessonPayload() {
 async function saveLesson() {
   if (!selectedModule.value || !props.course?.id) return
   lessonSaving.value = true
+  let savedOk = false
+  let wasEditing = !!editingLesson.value
   try {
     const payload = serializeLessonPayload()
     if (editingLesson.value) await api.put(`/instructor/lessons/${editingLesson.value.id}`, payload)
     else await api.post(`/modules/${selectedModule.value.id}/lessons`, payload)
     await loadStructure()
     emit('changed')
-    closeLessonDialog()
-    $q.notify({
-      type: 'positive',
-      message: editingLesson.value ? 'Lección actualizada correctamente.' : 'Lección creada correctamente.',
-    })
+    savedOk = true
   } catch (error) {
     $q.notify({ type: 'negative', message: formatError(error, 'No se pudo guardar la lección.') })
   } finally {
     lessonSaving.value = false
+    if (savedOk) {
+      closeLessonDialog()
+      $q.notify({
+        type: 'positive',
+        message: wasEditing ? 'Lección actualizada correctamente.' : 'Lección creada correctamente.',
+      })
+    }
   }
 }
 

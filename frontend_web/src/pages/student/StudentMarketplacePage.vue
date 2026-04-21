@@ -26,41 +26,12 @@
     </div>
 
     <div v-else class="course-grid">
-      <q-card v-for="course in marketplace.courses" :key="course.id" flat bordered class="course-card">
-        <div class="course-cover">
-          <img v-if="course.thumbnail" :src="course.thumbnail" :alt="course.title" />
-          <div v-else class="cover-fallback">
-            <q-icon name="play_circle" size="50px" />
-          </div>
-        </div>
-        <div class="course-card__body">
-          <div class="row items-center justify-between q-mb-sm">
-            <q-badge color="secondary" outline>{{ course.category?.name || 'General' }}</q-badge>
-            <div class="row q-gutter-xs">
-              <q-badge v-if="course.has_interactive_activities" color="positive">Gamificado</q-badge>
-              <q-badge v-if="course.is_level_locked" color="negative">Nivel {{ course.required_level }}</q-badge>
-            </div>
-          </div>
-          <div class="text-h6 text-weight-bold">{{ course.title }}</div>
-          <div class="text-caption text-grey-5 q-mt-xs">
-            {{ course.instructor?.name || 'Instructor' }} · {{ course.level }}
-          </div>
-          <div class="text-body2 text-grey-5 q-mt-md card-summary">
-            {{ course.short_description || course.description }}
-          </div>
-          <div class="row items-center justify-between q-mt-lg">
-            <div class="text-h5 text-secondary text-weight-bold">
-              {{ formatPrice(course.price) }}
-            </div>
-            <q-btn
-              :color="course.is_level_locked ? 'negative' : 'primary'"
-              no-caps
-              :label="course.is_level_locked ? 'Ver requisitos' : 'Ver curso'"
-              @click="openCourse(course.slug)"
-            />
-          </div>
-        </div>
-      </q-card>
+      <CourseMarketplaceCard
+        v-for="course in marketplace.courses"
+        :key="course.id"
+        :course="course"
+        @open="openCourse(course.slug)"
+      />
     </div>
 
     <div class="row justify-center">
@@ -79,6 +50,7 @@ import { computed, onMounted, reactive, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useStudentStore } from 'src/stores/student'
+import CourseMarketplaceCard from 'src/components/course/CourseMarketplaceCard.vue'
 
 const router = useRouter()
 const studentStore = useStudentStore()
@@ -145,10 +117,6 @@ watch(
 function openCourse(slug) {
   router.push({ name: 'student-course-detail', params: { slug } })
 }
-
-function formatPrice(price) {
-  return Number(price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-}
 </script>
 
 <style scoped>
@@ -166,14 +134,10 @@ function formatPrice(price) {
   align-items: center;
 }
 
-.filter-card,
-.course-card {
+.filter-card {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-}
-
-.filter-card {
   padding: 20px;
 }
 
@@ -187,34 +151,6 @@ function formatPrice(price) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-}
-
-.course-cover {
-  height: 180px;
-  overflow: hidden;
-  border-radius: 24px 24px 0 0;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.course-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cover-fallback {
-  height: 100%;
-  display: grid;
-  place-items: center;
-  color: #7f89c5;
-}
-
-.course-card__body {
-  padding: 18px;
-}
-
-.card-summary {
-  min-height: 64px;
 }
 
 @media (max-width: 1280px) {

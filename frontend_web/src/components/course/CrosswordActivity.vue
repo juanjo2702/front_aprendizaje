@@ -212,6 +212,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import { buildDefaultActivityConfig } from 'src/utils/activityTemplates'
 
 const props = defineProps({
   payload: {
@@ -237,14 +238,33 @@ const description = computed(
   () => effectivePayload.value?.description || 'Completa el crucigrama usando las pistas horizontales y verticales.',
 )
 
-const legacyDemoEntries = [
-  { id: 1, row: 0, col: 0, direction: 'across', clue: 'Interfaz para comunicar sistemas', answer: 'API' },
-  { id: 2, row: 0, col: 0, direction: 'down', clue: 'Aplicación instalada en un dispositivo', answer: 'APP' },
-  { id: 3, row: 0, col: 2, direction: 'down', clue: 'Sigla corta de inteligencia artificial', answer: 'IA' },
-  { id: 4, row: 2, col: 3, direction: 'across', clue: 'Modelo de objetos del documento', answer: 'DOM' },
-  { id: 5, row: 2, col: 5, direction: 'down', clue: 'Función que asocia un valor a otro', answer: 'MAP' },
-  { id: 6, row: 4, col: 0, direction: 'across', clue: 'Aplicación web progresiva', answer: 'PWA' },
-]
+function looksLikeInvalidStarterCrossword(payload) {
+  const entries = Array.isArray(payload?.entries) ? payload.entries : []
+
+  if (String(payload?.title || '').trim().toLowerCase() !== 'crucigrama de conceptos base') {
+    return false
+  }
+
+  const hasApiAcross = entries.some((entry) =>
+    String(entry?.direction || '').toLowerCase() === 'across' &&
+    Number(entry?.row ?? -1) === 0 &&
+    Number(entry?.col ?? -1) === 0 &&
+    normalizeText(entry?.answer) === 'API' &&
+    String(entry?.clue || '').includes('Interfaz para comunicar sistemas'),
+  )
+
+  const hasPwaDownAtOrigin = entries.some((entry) =>
+    String(entry?.direction || '').toLowerCase() === 'down' &&
+    Number(entry?.row ?? -1) === 0 &&
+    Number(entry?.col ?? -1) === 0 &&
+    (
+      normalizeText(entry?.answer) === 'PWA' ||
+      String(entry?.clue || '').includes('Aplicación web progresiva')
+    ),
+  )
+
+  return hasApiAcross && hasPwaDownAtOrigin
+}
 
 function normalizeText(value) {
   return String(value || '')
@@ -280,15 +300,8 @@ function looksLikeLegacyDemoPayload(payload) {
 }
 
 const effectivePayload = computed(() => {
-  if (looksLikeLegacyDemoPayload(props.payload)) {
-    return {
-      title: 'Crucigrama de conceptos base',
-      description: 'Completa el tablero usando las pistas horizontales y verticales.',
-      rows: 5,
-      cols: 6,
-      points_per_word: 10,
-      entries: legacyDemoEntries,
-    }
+  if (looksLikeLegacyDemoPayload(props.payload) || looksLikeInvalidStarterCrossword(props.payload)) {
+    return buildDefaultActivityConfig('crossword')
   }
 
   return props.payload || {}

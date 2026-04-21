@@ -120,6 +120,7 @@ import { useRouter } from 'vue-router'
 import TeacherActivityDraftPreview from 'src/components/teacher/TeacherActivityDraftPreview.vue'
 import TeacherActivitySettingsPanel from 'src/components/teacher/TeacherActivitySettingsPanel.vue'
 import { api } from 'src/services/api'
+import { buildDefaultActivityConfig } from 'src/utils/activityTemplates'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -170,55 +171,7 @@ function emptyForm() {
     passing_score: 70,
     xp_reward: 100,
     coin_reward: 25,
-    config_text: JSON.stringify(defaultConfigFor('trivia'), null, 2),
-  }
-}
-
-function defaultConfigFor(activityType = 'trivia') {
-  if (activityType === 'matching') {
-    return {
-      title: 'Relaciona conceptos y definiciones',
-      description: 'Empareja cada concepto con su definición correcta.',
-      points_per_pair: 10,
-      pairs: [
-        { id: 1, left: 'API', right: 'Interfaz para comunicar sistemas' },
-        { id: 2, left: 'Frontend', right: 'Capa visual que usa el alumno' },
-        { id: 3, left: 'Backend', right: 'Lógica y datos del servidor' },
-      ],
-    }
-  }
-
-  if (activityType === 'crossword') {
-    return {
-      title: 'Crucigrama de conceptos base',
-      description: 'Completa el tablero usando las pistas horizontales y verticales.',
-      rows: 5,
-      cols: 6,
-      points_per_word: 10,
-      entries: [
-        { id: 1, row: 0, col: 0, direction: 'across', clue: 'Interfaz para comunicar sistemas', answer: 'API' },
-        { id: 2, row: 0, col: 0, direction: 'down', clue: 'Aplicación instalada en un dispositivo', answer: 'APP' },
-        { id: 3, row: 0, col: 2, direction: 'down', clue: 'Sigla corta de inteligencia artificial', answer: 'IA' },
-        { id: 4, row: 2, col: 3, direction: 'across', clue: 'Modelo de objetos del documento', answer: 'DOM' },
-        { id: 5, row: 2, col: 5, direction: 'down', clue: 'Función que asocia un valor a otro', answer: 'MAP' },
-        { id: 6, row: 4, col: 0, direction: 'across', clue: 'Aplicación web progresiva', answer: 'PWA' },
-      ],
-    }
-  }
-
-  return {
-    title: 'Actividad',
-    questions: [
-      {
-        id: 1,
-        prompt: 'Pregunta de ejemplo',
-        options: [
-          { id: 'a', text: 'Respuesta correcta', is_correct: true },
-          { id: 'b', text: 'Respuesta distractora', is_correct: false },
-        ],
-        points: 10,
-      },
-    ],
+    config_text: JSON.stringify(buildDefaultActivityConfig('trivia'), null, 2),
   }
 }
 
@@ -256,7 +209,7 @@ function previewConfig(config) {
 }
 
 function applyActivityTemplate() {
-  form.value.config_text = JSON.stringify(defaultConfigFor(form.value.activity_type || 'trivia'), null, 2)
+  form.value.config_text = JSON.stringify(buildDefaultActivityConfig(form.value.activity_type || 'trivia'), null, 2)
 }
 
 async function loadCourses() {

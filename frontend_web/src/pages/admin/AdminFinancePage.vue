@@ -1,6 +1,6 @@
 <template>
-  <q-page class="admin-page q-pa-xl">
-    <div class="page-wrap">
+  <q-page class="admin-page workspace-page">
+    <div class="page-wrap workspace-wrap">
       <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
         <div class="col-12 col-lg">
           <h2 class="q-mb-xs">The Vault</h2>
@@ -10,6 +10,13 @@
         </div>
         <div class="col-12 col-lg-auto row q-gutter-sm">
           <q-btn flat no-caps color="secondary" icon="refresh" label="Recargar" @click="reloadAll" />
+        </div>
+      </div>
+
+      <div class="workspace-helper q-mb-lg">
+        <q-icon name="info" color="secondary" size="20px" />
+        <div>
+          <strong>Flujo recomendado:</strong> primero confirma el pago QR, luego verifica la compra desbloqueada y por último procesa el retiro del docente cuando no existan disputas.
         </div>
       </div>
 
@@ -23,26 +30,26 @@
         <q-tab-panel name="payments" class="q-pa-none">
           <div class="row q-col-gutter-md q-mb-lg">
             <div class="col-12 col-sm-4">
-              <q-card class="summary-card q-pa-md">
+              <q-card class="summary-card workspace-summary-card">
                 <div class="text-caption text-grey-5">Pendientes</div>
                 <div class="text-h4 text-weight-bold text-warning">{{ paymentSummary.pending_count || 0 }}</div>
               </q-card>
             </div>
             <div class="col-12 col-sm-4">
-              <q-card class="summary-card q-pa-md">
+              <q-card class="summary-card workspace-summary-card">
                 <div class="text-caption text-grey-5">Ingresos plataforma mes</div>
                 <div class="text-h5 text-weight-bold text-positive">{{ formatCurrency(paymentSummary.platform_revenue_this_month || 0) }}</div>
               </q-card>
             </div>
             <div class="col-12 col-sm-4">
-              <q-card class="summary-card q-pa-md">
+              <q-card class="summary-card workspace-summary-card">
                 <div class="text-caption text-grey-5">Ingresos docente mes</div>
                 <div class="text-h5 text-weight-bold text-info">{{ formatCurrency(paymentSummary.instructor_revenue_this_month || 0) }}</div>
               </q-card>
             </div>
           </div>
 
-          <q-card class="panel-card">
+          <q-card class="panel-card workspace-table-card">
             <q-card-section class="q-pa-none">
               <q-table
                 :rows="payments"
@@ -53,6 +60,13 @@
                 :loading="paymentsLoading"
                 :pagination="{ rowsPerPage: 15 }"
               >
+                <template #no-data>
+                  <div class="full-width workspace-empty workspace-empty--center">
+                    <strong>No hay pagos QR para revisar.</strong>
+                    <span>Cuando un estudiante genere o confirme una compra, aparecerá aquí para validación manual o automática.</span>
+                  </div>
+                </template>
+
                 <template #body-cell-student="props">
                   <q-td :props="props">
                     <div class="text-weight-medium">{{ props.row.user?.name || 'Sin estudiante' }}</div>
@@ -105,20 +119,20 @@
         <q-tab-panel name="payouts" class="q-pa-none">
           <div class="row q-col-gutter-md q-mb-lg">
             <div class="col-12 col-sm-6">
-              <q-card class="summary-card q-pa-md">
+              <q-card class="summary-card workspace-summary-card">
                 <div class="text-caption text-grey-5">Pendiente por pagar</div>
                 <div class="text-h4 text-weight-bold text-warning">{{ formatCurrency(payoutSummary.pending_amount || 0) }}</div>
               </q-card>
             </div>
             <div class="col-12 col-sm-6">
-              <q-card class="summary-card q-pa-md">
+              <q-card class="summary-card workspace-summary-card">
                 <div class="text-caption text-grey-5">Pagado este mes</div>
                 <div class="text-h4 text-weight-bold text-positive">{{ formatCurrency(payoutSummary.paid_this_month || 0) }}</div>
               </q-card>
             </div>
           </div>
 
-          <q-card class="panel-card">
+          <q-card class="panel-card workspace-table-card">
             <q-card-section class="q-pa-none">
               <q-table
                 :rows="payouts"
@@ -129,6 +143,13 @@
                 :loading="payoutsLoading"
                 :pagination="{ rowsPerPage: 15 }"
               >
+                <template #no-data>
+                  <div class="full-width workspace-empty workspace-empty--center">
+                    <strong>No hay retiros registrados.</strong>
+                    <span>Las solicitudes de payout aparecerán aquí cuando los docentes acumulen saldo y soliciten retiro.</span>
+                  </div>
+                </template>
+
                 <template #body-cell-instructor="props">
                   <q-td :props="props">
                     <div class="text-weight-medium">{{ props.row.instructor?.name || 'Sin docente' }}</div>
@@ -159,7 +180,7 @@
         </q-tab-panel>
 
         <q-tab-panel name="settings" class="q-pa-none">
-          <q-card class="panel-card q-pa-lg">
+          <q-card class="panel-card workspace-panel">
             <div class="text-h6 text-weight-bold q-mb-sm">Configuración de comisiones</div>
             <div class="text-caption text-grey-5 q-mb-lg">
               Estos porcentajes se usan al confirmar cada pago para separar plataforma vs docente.
@@ -175,6 +196,7 @@
                   min="0"
                   max="100"
                   label="Comisión plataforma (%)"
+                  hint="Ejemplo: 20 significa que la plataforma retiene el 20% de cada pago confirmado."
                 />
               </div>
               <div class="col-12 col-md-4">
@@ -183,6 +205,7 @@
                   outlined
                   dense
                   label="Moneda"
+                  hint="Usa BOB para la demo de Bolivia y conciliación QR."
                 />
               </div>
               <div class="col-12 col-md-4">
@@ -193,6 +216,7 @@
                   dense
                   min="0"
                   label="Monto mínimo de retiro"
+                  hint="Evita solicitudes muy pequeñas y simplifica la operación administrativa."
                 />
               </div>
             </div>
@@ -225,7 +249,7 @@
             />
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat no-caps label="Cancelar" color="grey-5" v-close-popup />
+            <q-btn v-close-popup flat no-caps label="Cancelar" color="grey-5" />
             <q-btn
               :color="paymentDialog.mode === 'confirm' ? 'positive' : 'negative'"
               no-caps
@@ -249,7 +273,7 @@
             <q-input v-model="payoutDialog.notes" type="textarea" outlined autogrow label="Notas administrativas" />
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat no-caps label="Cancelar" color="grey-5" v-close-popup />
+            <q-btn v-close-popup flat no-caps label="Cancelar" color="grey-5" />
             <q-btn color="primary" no-caps label="Guardar decisión" :loading="payoutSaving" @click="submitPayoutDecision" />
           </q-card-actions>
         </q-card>
@@ -471,8 +495,7 @@ onMounted(reloadAll)
 }
 
 .page-wrap {
-  max-width: 1340px;
-  margin: 0 auto;
+  width: min(100%, 1340px);
 }
 
 .summary-card,
@@ -486,5 +509,11 @@ onMounted(reloadAll)
   background: rgba(8, 18, 36, 0.72);
   border: 1px solid rgba(93, 122, 255, 0.12);
   border-radius: 18px;
+}
+
+@media (max-width: 768px) {
+  .admin-tabs {
+    overflow-x: auto;
+  }
 }
 </style>

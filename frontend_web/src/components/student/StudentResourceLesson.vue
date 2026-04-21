@@ -1,5 +1,14 @@
 <template>
   <div class="column q-gutter-md">
+    <q-card v-if="description" flat bordered class="resource-card">
+      <q-card-section>
+        <div class="text-subtitle1 text-weight-medium q-mb-sm">Sobre este recurso</div>
+        <div class="text-body2">
+          {{ description }}
+        </div>
+      </q-card-section>
+    </q-card>
+
     <StudentPdfViewer v-if="isPdf" :source="source" />
 
     <q-card v-else flat bordered class="resource-card">
@@ -27,6 +36,10 @@ const props = defineProps({
     default: '',
   },
   fileName: {
+    type: String,
+    default: '',
+  },
+  description: {
     type: String,
     default: '',
   },

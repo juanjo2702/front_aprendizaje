@@ -1,6 +1,26 @@
 // ── Global Styles ─ Premium Dark Theme ──────────────────────
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+:root {
+  --app-page-max: 1360px;
+  --app-page-padding: 28px;
+  --app-gap-lg: 24px;
+  --app-gap-md: 18px;
+  --app-gap-sm: 12px;
+  --app-radius-xl: 32px;
+  --app-radius-lg: 24px;
+  --app-radius-md: 18px;
+  --app-border: rgba(255, 255, 255, 0.08);
+  --app-border-strong: rgba(255, 255, 255, 0.14);
+  --app-surface: rgba(255, 255, 255, 0.02);
+  --app-surface-strong: rgba(12, 17, 37, 0.78);
+  --app-surface-soft: rgba(255, 255, 255, 0.04);
+  --app-text-primary: #eaeaf5;
+  --app-text-secondary: #b8bbd8;
+  --app-text-muted: #8d95bf;
+  --app-focus-ring: 0 0 0 3px rgba(0, 210, 211, 0.18);
+}
+
 // ─── Base ────────────────────────────────────────────────────
 * {
   margin: 0;
@@ -21,6 +41,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+}
+
+#q-app {
+  min-height: 100vh;
 }
 
 // ─── Typography ──────────────────────────────────────────────
@@ -54,9 +78,14 @@ h4 {
 }
 
 p {
-  color: #8b8ba7;
+  color: var(--app-text-muted);
   line-height: 1.7;
   font-size: 0.95rem;
+}
+
+img {
+  max-width: 100%;
+  display: block;
 }
 
 a {
@@ -109,6 +138,127 @@ a {
     box-shadow: 0 8px 40px rgba(108, 92, 231, 0.12);
     transform: translateY(-2px);
   }
+}
+
+// ─── Shared Workspace UX ────────────────────────────────────
+.workspace-page {
+  padding: var(--app-page-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-lg);
+}
+
+.workspace-wrap {
+  width: min(100%, var(--app-page-max));
+  margin: 0 auto;
+}
+
+.workspace-hero,
+.workspace-panel,
+.workspace-card,
+.workspace-filter-card,
+.workspace-summary-card,
+.workspace-table-card {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  border-radius: var(--app-radius-lg);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.16);
+}
+
+.workspace-hero {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.workspace-panel,
+.workspace-card,
+.workspace-summary-card,
+.workspace-table-card {
+  padding: clamp(18px, 2vw, 24px);
+}
+
+.workspace-filter-card {
+  padding: 18px;
+}
+
+.workspace-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.workspace-section-copy {
+  color: var(--app-text-secondary);
+  max-width: 72ch;
+}
+
+.workspace-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--app-gap-lg);
+}
+
+.workspace-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--app-gap-md);
+}
+
+.workspace-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--app-gap-md);
+}
+
+.workspace-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.workspace-empty {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 16px 0;
+  color: var(--app-text-muted);
+}
+
+.workspace-empty--center {
+  justify-items: center;
+  text-align: center;
+  padding: 28px 12px;
+}
+
+.workspace-helper {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 210, 211, 0.14);
+  background: rgba(0, 210, 211, 0.06);
+  color: var(--app-text-secondary);
+}
+
+.workspace-helper strong {
+  color: var(--app-text-primary);
+}
+
+.workspace-title-clamp-2,
+.workspace-copy-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.workspace-title-clamp-2 {
+  min-height: 2.8em;
+}
+
+.workspace-copy-clamp-2 {
+  min-height: 3.2em;
 }
 
 // ─── Premium Buttons ─────────────────────────────────────────
@@ -230,12 +380,93 @@ a {
   text-transform: none;
   font-weight: 600;
   letter-spacing: 0.01em;
+  min-height: 42px;
 }
 
 .q-field {
   .q-field__control {
-    border-radius: 10px;
+    border-radius: 14px;
+    min-height: 54px;
   }
+
+  .q-field__label,
+  .q-field__marginal,
+  .q-field__native,
+  .q-field__input {
+    color: #edf2ff;
+  }
+
+  .q-field__bottom {
+    min-height: 24px;
+    padding-top: 6px;
+    color: var(--app-text-muted);
+  }
+
+  &.q-field--focused .q-field__control {
+    box-shadow: var(--app-focus-ring);
+  }
+}
+
+.q-field--outlined .q-field__control:before {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.q-field--outlined:hover .q-field__control:before {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.q-chip {
+  min-height: 36px;
+}
+
+.q-breadcrumbs {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.q-tabs {
+  border-radius: 18px;
+}
+
+.q-tab {
+  min-height: 52px;
+}
+
+.q-table__container {
+  border-radius: 22px;
+}
+
+.q-table thead tr th {
+  color: #dfe5ff;
+  font-weight: 700;
+}
+
+.q-table tbody td {
+  color: #edf2ff;
+}
+
+.q-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.q-menu,
+.q-dialog .q-card {
+  border-radius: 22px;
+}
+
+.q-notification {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.q-notification__message {
+  line-height: 1.45;
+}
+
+.q-banner,
+.q-alert {
+  border-radius: 18px;
 }
 
 .q-drawer {
@@ -251,5 +482,61 @@ a {
   &.q-router-link--active {
     background: rgba(108, 92, 231, 0.15);
     color: #a29bfe;
+  }
+}
+
+@media (max-width: 1280px) {
+  :root {
+    --app-page-padding: 22px;
+  }
+
+  .workspace-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-grid-3,
+  .workspace-grid-2,
+  .workspace-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --app-page-padding: 16px;
+    --app-gap-lg: 18px;
+    --app-gap-md: 14px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.65rem;
+  }
+
+  .workspace-page {
+    gap: 18px;
+  }
+
+  .workspace-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .workspace-grid-4,
+  .workspace-grid-3,
+  .workspace-grid-2,
+  .workspace-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .q-btn {
+    min-height: 40px;
+  }
+
+  .q-field .q-field__control {
+    min-height: 50px;
   }
 }

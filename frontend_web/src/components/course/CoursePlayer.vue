@@ -119,6 +119,9 @@
                 <div class="text-subtitle1 text-weight-medium">
                   Recurso descargable
                 </div>
+                <div v-if="content.payload.description" class="text-body2 text-grey-4">
+                  {{ content.payload.description }}
+                </div>
                 <q-btn
                   color="primary"
                   icon="mdi-download"

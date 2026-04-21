@@ -1,5 +1,5 @@
 <template>
-  <q-page class="student-page">
+  <q-page class="student-page workspace-page">
     <section class="hero-grid">
       <q-card flat bordered class="hero-card hero-card--primary">
         <div class="hero-card__badge">Lobby de aprendizaje</div>
@@ -39,8 +39,8 @@
       <StudentRadarChart :skills="dashboard.radarSkills" />
     </section>
 
-    <section class="section-block">
-      <div class="section-head">
+    <section class="section-block workspace-wrap">
+      <div class="section-head workspace-section-head">
         <div>
           <div class="text-h5 text-weight-bold">Continuar viendo</div>
           <div class="text-caption text-grey-5">Tus cursos activos con avance exacto y acceso rapido.</div>
@@ -60,7 +60,7 @@
           :key="course.slug || course.id"
           flat
           bordered
-          class="rail-card"
+          class="rail-card workspace-card"
           @click="openCourse(course.slug)"
         >
           <div class="rail-card__content">
@@ -85,8 +85,8 @@
     </section>
 
     <section class="section-grid">
-      <q-card flat bordered class="student-panel">
-        <div class="section-head">
+      <q-card flat bordered class="student-panel workspace-panel">
+        <div class="section-head workspace-section-head">
           <div>
             <div class="text-h6 text-weight-bold">Actividad reciente</div>
             <div class="text-caption text-grey-5">Tus ultimas partidas, quizzes y certificados.</div>
@@ -109,11 +109,14 @@
             </q-item-section>
           </q-item>
         </q-list>
-        <div v-else class="text-grey-5">Cuando completes actividades, apareceran aqui.</div>
+        <div v-else class="workspace-empty">
+          <strong>Todavía no hay actividad reciente.</strong>
+          <span>Cuando completes una lección, quiz o actividad gamificada, la verás aquí con fecha y resultado.</span>
+        </div>
       </q-card>
 
-      <q-card flat bordered class="student-panel">
-        <div class="section-head">
+      <q-card flat bordered class="student-panel workspace-panel">
+        <div class="section-head workspace-section-head">
           <div>
             <div class="text-h6 text-weight-bold">Atajos utiles</div>
             <div class="text-caption text-grey-5">Acciones frecuentes para entrar en flujo rapido.</div>
@@ -130,8 +133,8 @@
       </q-card>
     </section>
 
-    <q-card flat bordered class="student-panel">
-      <div class="section-head">
+    <q-card flat bordered class="student-panel workspace-panel workspace-wrap">
+      <div class="section-head workspace-section-head">
         <div>
           <div class="text-h6 text-weight-bold">Canjes recientes</div>
           <div class="text-caption text-grey-5">Así se ve la utilidad real de tus monedas dentro de la plataforma.</div>
@@ -157,7 +160,10 @@
           </q-item-section>
         </q-item>
       </q-list>
-      <div v-else class="text-grey-5">Todavía no has gastado monedas. La tienda ya está lista para usarse.</div>
+      <div v-else class="workspace-empty">
+        <strong>Aún no has usado tus monedas.</strong>
+        <span>Entra a Coin Shop para canjear recompensas, cupones o mejoras visuales de perfil.</span>
+      </div>
     </q-card>
   </q-page>
 </template>
@@ -197,9 +203,6 @@ function formatDate(value) {
 
 <style scoped>
 .student-page {
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
   gap: 28px;
 }
 
@@ -207,6 +210,8 @@ function formatDate(value) {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   gap: 24px;
+  width: min(100%, var(--app-page-max));
+  margin: 0 auto;
 }
 
 .hero-card,
@@ -278,13 +283,12 @@ function formatDate(value) {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   gap: 24px;
+  width: min(100%, var(--app-page-max));
+  margin: 0 auto;
 }
 
 .section-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: center;
+  margin-bottom: 16px;
 }
 
 .course-rail {
@@ -329,6 +333,23 @@ function formatDate(value) {
   .section-grid,
   .course-rail {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-card,
+  .student-panel,
+  .rail-card {
+    padding: 18px;
+  }
+
+  .hero-stats,
+  .shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card__title {
+    font-size: 2rem;
   }
 }
 </style>

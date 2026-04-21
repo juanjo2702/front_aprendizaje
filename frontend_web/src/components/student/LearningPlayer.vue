@@ -183,6 +183,7 @@ const rendererProps = computed(() => {
     return {
       source: content.value.payload?.file_url || '',
       fileName: content.value.payload?.file_name || 'Recurso descargable',
+      description: content.value.payload?.description || '',
     }
   }
 

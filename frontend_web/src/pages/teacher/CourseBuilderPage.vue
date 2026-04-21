@@ -53,6 +53,14 @@
               <div class="text-h6 text-weight-bold">{{ course.title }}</div>
               <q-badge :color="statusColor(course.status)" rounded>{{ statusLabel(course.status) }}</q-badge>
               <q-badge v-if="course.has_certificate" color="secondary" outline rounded>Certificado</q-badge>
+              <q-badge
+                v-if="course.has_certificate && course.certificate_requires_final_exam"
+                color="warning"
+                outline
+                rounded
+              >
+                Examen final
+              </q-badge>
             </div>
             <div class="text-caption text-grey-5 q-mb-sm">{{ course.category?.name || 'Sin categoría' }} · {{ levelLabel(course.level) }} · {{ (course.language || 'es').toUpperCase() }}</div>
             <div class="text-body2 text-grey-4">{{ course.short_description || course.description || 'Sin descripción todavía.' }}</div>
@@ -252,6 +260,7 @@ async function createDemoCourse() {
       requirements: ['Acceso como docente', 'Entorno local disponible'],
       what_you_learn: ['Probar el CRUD', 'Preparar contenido base', 'Verificar permisos'],
       has_certificate: false,
+      certificate_requires_final_exam: false,
       certificate_min_score: 70,
     }
     const { data } = await api.post('/courses', payload)

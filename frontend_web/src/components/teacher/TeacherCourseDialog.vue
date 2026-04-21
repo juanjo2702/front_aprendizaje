@@ -18,7 +18,19 @@
               <div class="col-12 col-md-4"><q-input v-model="form.language" label="Idioma" outlined dense maxlength="10" /></div>
               <div class="col-12 col-md-4"><q-select v-model="form.status" :options="statusOptions" emit-value map-options label="Estado" outlined dense /></div>
               <div class="col-12 col-md-4 flex flex-center"><q-toggle v-model="form.has_certificate" color="secondary" label="Emitir certificado" /></div>
-              <div class="col-12" v-if="form.has_certificate"><q-input v-model.number="form.certificate_min_score" label="Puntaje mínimo" type="number" outlined dense min="0" max="100" /></div>
+              <div class="col-12" v-if="form.has_certificate">
+                <q-input v-model.number="form.certificate_min_score" label="Puntaje mínimo" type="number" outlined dense min="0" max="100" />
+              </div>
+              <div class="col-12" v-if="form.has_certificate">
+                <q-toggle
+                  v-model="form.certificate_requires_final_exam"
+                  color="warning"
+                  label="Requerir examen final dentro de la plataforma"
+                />
+                <div class="text-caption text-grey-5 q-mt-xs">
+                  Después podrás elegir la lección de actividad que funcionará como examen final desde el Course Builder.
+                </div>
+              </div>
               <div class="col-12 col-md-6"><q-input v-model="form.requirements_text" type="textarea" label="Requisitos (uno por línea)" outlined autogrow /></div>
               <div class="col-12 col-md-6"><q-input v-model="form.what_you_learn_text" type="textarea" label="Lo que aprenderás (uno por línea)" outlined autogrow /></div>
             </div>
@@ -72,6 +84,7 @@ function emptyForm() {
     language: 'es',
     status: 'draft',
     has_certificate: false,
+    certificate_requires_final_exam: false,
     certificate_min_score: 70,
     requirements_text: '',
     what_you_learn_text: '',
@@ -94,6 +107,7 @@ function resetForm() {
     language: props.course.language || 'es',
     status: props.course.status || 'draft',
     has_certificate: Boolean(props.course.has_certificate),
+    certificate_requires_final_exam: Boolean(props.course.certificate_requires_final_exam),
     certificate_min_score: Number(props.course.certificate_min_score || 70),
     requirements_text: (props.course.requirements || []).join('\n'),
     what_you_learn_text: (props.course.what_you_learn || []).join('\n'),
@@ -117,6 +131,7 @@ function submit() {
     requirements: serializeList(form.value.requirements_text),
     what_you_learn: serializeList(form.value.what_you_learn_text),
     has_certificate: Boolean(form.value.has_certificate),
+    certificate_requires_final_exam: Boolean(form.value.has_certificate && form.value.certificate_requires_final_exam),
     certificate_min_score: Number(form.value.certificate_min_score || 70),
   })
 }
@@ -133,6 +148,7 @@ function fillDemoTemplate() {
     language: 'es',
     status: 'draft',
     has_certificate: true,
+    certificate_requires_final_exam: true,
     certificate_min_score: 70,
     requirements_text: 'Cuenta docente activa\nNavegador actualizado',
     what_you_learn_text: 'Crear cursos\nEditar información\nValidar el flujo docente\nPreparar módulos y clases',

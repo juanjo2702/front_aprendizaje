@@ -21,6 +21,11 @@
             Certificado desde {{ normalizedScore }}%
           </q-badge>
         </div>
+        <div class="col-auto" v-if="form.has_certificate && form.certificate_requires_final_exam">
+          <q-badge color="warning" outline>
+            Requiere examen final
+          </q-badge>
+        </div>
         <div class="col-auto">
           <q-badge color="primary" outline>
             {{ formattedPrice }}
@@ -31,6 +36,14 @@
       <div class="text-body2 text-grey-4" style="white-space: pre-line">
         {{ form.description || 'La descripción larga del curso se mostrará aquí mientras la vas escribiendo.' }}
       </div>
+
+      <q-banner
+        v-if="form.has_certificate && form.certificate_requires_final_exam"
+        rounded
+        class="bg-warning text-dark q-mt-md"
+      >
+        Este curso pedirá aprobar un examen final dentro de la plataforma antes de habilitar el certificado.
+      </q-banner>
     </q-card>
 
     <div class="row q-col-gutter-md">

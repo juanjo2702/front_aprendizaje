@@ -1,73 +1,84 @@
 <template>
-  <q-page class="catalog-page q-pa-xl" style="max-width: 1200px; margin: 0 auto">
-    <!-- Header -->
-    <div class="q-mb-xl animate-fade-in-up">
-      <h2 class="q-mb-xs">Explorar cursos</h2>
-      <p>Encuentra el curso perfecto para ti</p>
+  <q-page class="catalog-page">
+    <div class="section-head animate-fade-in-up">
+      <div>
+        <div class="text-h4 text-weight-bold">Explorar cursos</div>
+        <div class="text-caption text-grey-5">Encuentra el curso perfecto para ti.</div>
+      </div>
+      <q-badge outline color="secondary">{{ totalResults }} resultados</q-badge>
     </div>
 
-    <!-- Filters -->
-    <div class="row q-gutter-md q-mb-xl animate-fade-in-up animate-delay-1">
-      <q-input
-        v-model="filters.search"
-        dense
-        outlined
-        dark
-        placeholder="Buscar..."
-        class="col-12 col-sm-4"
-        @keyup.enter="loadCourses"
-      >
-        <template #prepend><q-icon name="search" /></template>
-      </q-input>
+    <q-card flat bordered class="filter-card animate-fade-in-up animate-delay-1">
+      <div class="filter-grid">
+        <q-input
+          v-model="filters.search"
+          outlined
+          dense
+          label="Buscar cursos"
+          debounce="350"
+        >
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
 
-      <q-select
-        v-model="filters.category"
-        dense
-        outlined
-        dark
-        emit-value
-        map-options
-        :options="categoryOptions"
-        label="Categoría"
-        class="col-12 col-sm-3"
-        clearable
-        @update:model-value="loadCourses"
-      />
+        <q-select
+          v-model="filters.category"
+          outlined
+          dense
+          emit-value
+          map-options
+          :options="categoryOptions"
+          label="Categoría"
+          clearable
+        />
 
-      <q-select
-        v-model="filters.level"
-        dense
-        outlined
-        dark
-        emit-value
-        map-options
-        :options="levelOptions"
-        label="Nivel"
-        class="col-12 col-sm-2"
-        clearable
-        @update:model-value="loadCourses"
-      />
+        <q-select
+          v-model="filters.level"
+          outlined
+          dense
+          emit-value
+          map-options
+          :options="levelOptions"
+          label="Nivel"
+          clearable
+        />
 
-      <q-select
-        v-model="filters.sort"
-        dense
-        outlined
-        dark
-        emit-value
-        map-options
-        :options="sortOptions"
-        label="Ordenar"
-        class="col-12 col-sm-2"
-        @update:model-value="loadCourses"
-      />
-    </div>
+        <q-select
+          v-model="filters.price"
+          outlined
+          dense
+          emit-value
+          map-options
+          :options="priceOptions"
+          label="Precio"
+          clearable
+        />
 
-    <!-- Results -->
-    <div v-if="loading" class="row q-gutter-lg">
-      <div v-for="n in 6" :key="n" class="col-12 col-sm-6 col-md-4">
-        <q-skeleton type="rect" height="180px" dark style="border-radius: 12px" />
-        <q-skeleton type="text" dark class="q-mt-sm" />
-        <q-skeleton type="text" width="70%" dark />
+        <q-select
+          v-model="filters.gamification"
+          outlined
+          dense
+          emit-value
+          map-options
+          :options="gamificationOptions"
+          label="Gamificación"
+          clearable
+        />
+
+        <q-select
+          v-model="filters.sort"
+          outlined
+          dense
+          emit-value
+          map-options
+          :options="sortOptions"
+          label="Ordenar"
+        />
+      </div>
+    </q-card>
+
+    <div v-if="loading" class="row q-col-gutter-md">
+      <div v-for="n in 6" :key="n" class="col-12 col-md-6 col-xl-4">
+        <q-skeleton dark type="rect" height="260px" />
       </div>
     </div>
 
@@ -78,52 +89,17 @@
     </div>
 
     <div v-else>
-      <div class="row q-gutter-lg">
-        <div
+      <div class="course-grid">
+        <CourseMarketplaceCard
           v-for="(course, i) in courses"
           :key="course.id"
-          class="col-12 col-sm-6 col-md-4 animate-fade-in-up"
+          :course="course"
+          class="animate-fade-in-up"
           :class="'animate-delay-' + ((i % 4) + 1)"
-        >
-          <q-card
-            class="course-card glass-card cursor-pointer"
-            @click="openCourse(course)"
-          >
-            <div class="course-thumb">
-              <div class="course-thumb-placeholder">
-                <q-icon name="play_circle_outline" size="48px" color="white" />
-              </div>
-            </div>
-            <q-card-section>
-              <div class="row items-center q-mb-sm">
-                <q-avatar size="24px" color="primary" text-color="white" class="q-mr-sm">
-                  <span style="font-size: 10px">{{ course.instructor?.name?.[0] }}</span>
-                </q-avatar>
-                <span style="color: #8b8ba7; font-size: 0.8rem">{{ course.instructor?.name }}</span>
-                <q-space />
-                <span class="badge-premium badge-primary" style="font-size: 0.7rem">{{
-                  course.category?.name
-                }}</span>
-              </div>
-              <h4 style="font-size: 1rem; line-height: 1.4" class="q-mb-sm">{{ course.title }}</h4>
-              <p class="ellipsis-2-lines" style="font-size: 0.85rem">
-                {{ course.short_description }}
-              </p>
-              <div class="row items-center justify-between q-mt-md">
-                <div class="row items-center q-gutter-xs">
-                  <q-icon name="people" color="grey-6" size="16px" />
-                  <span style="color: #8b8ba7; font-size: 0.8rem">{{ course.total_students }}</span>
-                </div>
-                <div class="text-h6 text-weight-bold" style="color: #00d2d3">
-                  ${{ course.price }}
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+          @open="openCourse"
+        />
       </div>
 
-      <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex flex-center q-mt-xl">
         <q-pagination
           v-model="page"
@@ -141,9 +117,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services/api'
+import CourseMarketplaceCard from 'src/components/course/CourseMarketplaceCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -151,16 +128,21 @@ const courses = ref([])
 const loading = ref(true)
 const page = ref(1)
 const totalPages = ref(1)
-const categories = ref([])
+const totalItems = ref(0)
 
 const filters = reactive({
   search: route.query.search || '',
   category: route.query.category || null,
   level: null,
+  price: null,
+  gamification: null,
   sort: 'newest',
 })
 
+const totalResults = computed(() => totalItems.value || courses.value.length)
+
 const levelOptions = [
+  { label: 'Todos', value: null },
   { label: 'Principiante', value: 'beginner' },
   { label: 'Intermedio', value: 'intermediate' },
   { label: 'Avanzado', value: 'advanced' },
@@ -174,20 +156,37 @@ const sortOptions = [
   { label: 'Precio: mayor', value: 'price_high' },
 ]
 
+const priceOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Gratis', value: 'free' },
+  { label: 'De pago', value: 'paid' },
+]
+
+const gamificationOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Con gamificación', value: true },
+  { label: 'Sin gamificación', value: false },
+]
+
 const categoryOptions = ref([])
 
 async function loadCourses() {
   loading.value = true
+
   try {
     const params = { page: page.value, per_page: 12 }
+
     if (filters.search) params.search = filters.search
     if (filters.category) params.category = filters.category
     if (filters.level) params.level = filters.level
+    if (filters.price) params.price = filters.price
+    if (filters.gamification !== null) params.gamification = filters.gamification
     if (filters.sort) params.sort = filters.sort
 
     const { data } = await api.get('/courses', { params })
     courses.value = data.data
     totalPages.value = data.last_page
+    totalItems.value = data.total || data.data?.length || 0
   } catch (e) {
     console.error('Error loading courses:', e)
   } finally {
@@ -209,40 +208,82 @@ function openCourse(course) {
 onMounted(async () => {
   try {
     const { data } = await api.get('/categories')
-    categories.value = data
-    categoryOptions.value = data.map((c) => ({ label: c.name, value: c.slug }))
-  } catch (e) {
-    /* ignore */
+    categoryOptions.value = [
+      { label: 'Todas', value: null },
+      ...data.map((category) => ({ label: category.name, value: category.slug })),
+    ]
+  } catch {
+    categoryOptions.value = [{ label: 'Todas', value: null }]
   }
+
   loadCourses()
 })
+
+watch(
+  () => ({ ...filters }),
+  () => {
+    page.value = 1
+    loadCourses()
+  },
+  { deep: true },
+)
 </script>
 
 <style lang="scss" scoped>
-.course-card {
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(108, 92, 231, 0.15);
+.catalog-page {
+  padding: 28px;
+  max-width: 1560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.filter-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 1280px) {
+  .filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .course-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.course-thumb {
-  height: 180px;
-  overflow: hidden;
-}
-.course-thumb-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1a1a3e 0%, #232350 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ellipsis-2-lines {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+
+@media (max-width: 900px) {
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-grid,
+  .course-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -61,25 +61,50 @@
       </div>
     </q-drawer>
 
-    <q-page-container>
-      <router-view />
+    <q-page-container class="student-page-container">
+      <div class="student-page-shell">
+        <section class="student-crumb-bar q-px-lg q-py-md">
+          <div class="row items-center justify-between q-col-gutter-md">
+            <div class="col-12 col-lg-auto row items-center q-gutter-sm">
+              <AppBackButton v-if="showBackButton" :fallback-route="{ name: 'student-dashboard' }" />
+              <q-breadcrumbs class="text-grey-5">
+                <q-breadcrumbs-el
+                  v-for="(crumb, index) in studentBreadcrumbs"
+                  :key="`${crumb.label}-${index}`"
+                  :label="crumb.label"
+                  :to="crumb.to"
+                />
+              </q-breadcrumbs>
+            </div>
+            <div class="col-12 col-lg-auto text-subtitle1 text-weight-bold text-grey-2">
+              {{ currentStudentTitle }}
+            </div>
+          </div>
+        </section>
+
+        <router-view />
+      </div>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from 'src/stores/auth'
 import { useStudentStore } from 'src/stores/student'
+import AppBackButton from 'src/components/shared/AppBackButton.vue'
 
+const $q = useQuasar()
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const studentStore = useStudentStore()
 const { gamificationSummary } = storeToRefs(studentStore)
 
-const drawerOpen = ref(true)
+const drawerOpen = ref($q.screen.gt.md)
 
 const navItems = [
   { name: 'student-dashboard', icon: 'dashboard_customize', label: 'Dashboard', caption: 'Lobby de aprendizaje y progreso.' },
@@ -100,9 +125,31 @@ const initials = computed(() => {
     .slice(0, 2)
 })
 
+const currentStudentTitle = computed(() => {
+  const title = route.meta?.studentTitle
+  return typeof title === 'function' ? title(route) : (title || 'Workspace estudiante')
+})
+
+const studentBreadcrumbs = computed(() => {
+  const crumbs = route.meta?.studentCrumbs
+  const resolved = typeof crumbs === 'function' ? crumbs(route) : (crumbs || [])
+
+  return resolved.length ? resolved : [{ label: 'Dashboard', to: { name: 'student-dashboard' } }]
+})
+
+const showBackButton = computed(() => route.name !== 'student-dashboard')
+
 onMounted(() => {
   studentStore.primeWorkspace()
 })
+
+watch(
+  () => $q.screen.gt.md,
+  (isDesktop) => {
+    drawerOpen.value = isDesktop
+  },
+  { immediate: true },
+)
 
 async function logout() {
   await auth.logout()
@@ -125,6 +172,7 @@ async function logout() {
 .toolbar-shell {
   min-height: 76px;
   padding-inline: 18px;
+  gap: 10px;
 }
 
 .brand-block {
@@ -146,6 +194,7 @@ async function logout() {
 .toolbar-metrics {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .student-drawer {
@@ -184,5 +233,45 @@ async function logout() {
 .drawer-footer {
   padding: 18px;
   margin-top: auto;
+}
+
+.student-page-container {
+  background: transparent;
+}
+
+.student-page-shell {
+  min-height: 100%;
+}
+
+.student-crumb-bar {
+  position: sticky;
+  top: 76px;
+  z-index: 10;
+  background: rgba(11, 14, 33, 0.84);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(118, 122, 180, 0.12);
+}
+
+@media (max-width: 768px) {
+  .toolbar-shell {
+    min-height: 68px;
+    padding-inline: 12px;
+  }
+
+  .brand-title {
+    font-size: 1.05rem;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .drawer-head {
+    padding: 18px;
+  }
+
+  .student-crumb-bar {
+    top: 68px;
+  }
 }
 </style>

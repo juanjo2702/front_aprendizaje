@@ -1,7 +1,7 @@
 <template>
-  <q-page class="teacher-dashboard q-pa-xl">
-    <div class="page-wrap">
-      <section class="hero-panel q-pa-xl q-mb-lg">
+  <q-page class="teacher-dashboard workspace-page">
+    <div class="page-wrap workspace-wrap">
+      <section class="hero-panel workspace-hero q-mb-lg">
         <div class="row q-col-gutter-xl items-center">
           <div class="col-12 col-lg-7">
             <q-badge color="secondary" outline class="q-mb-md">Centro de control docente</q-badge>
@@ -171,7 +171,7 @@
             />
           </div>
           <div class="col-12 col-xl-6">
-            <q-card class="recent-course-card q-pa-lg">
+            <q-card class="recent-course-card workspace-panel">
               <div class="row items-center justify-between q-mb-md">
                 <div>
                   <div class="text-subtitle1 text-weight-bold">Alertas docentes</div>
@@ -189,11 +189,17 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>{{ alert.student_name || 'Alumno' }}</q-item-label>
+                    <q-item-label caption v-if="alert.course_title">
+                      {{ alert.course_title }}<span v-if="alert.lesson_title"> · {{ alert.lesson_title }}</span>
+                    </q-item-label>
                     <q-item-label caption>{{ describeAlert(alert) }}</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
-              <div v-else class="text-grey-5">No hay alertas activas por ahora.</div>
+              <div v-else class="workspace-empty">
+                <strong>No hay alertas activas por ahora.</strong>
+                <span>Cuando existan preguntas abiertas o alumnos en riesgo, se resumirán aquí.</span>
+              </div>
             </q-card>
           </div>
         </section>
@@ -213,7 +219,7 @@
             <q-card
               v-for="course in recentCourses"
               :key="course.id"
-              class="recent-course-card q-pa-lg"
+              class="recent-course-card workspace-panel"
             >
               <div class="row q-col-gutter-lg items-center">
                 <div class="col-12 col-lg-7">
@@ -257,7 +263,7 @@
             </q-card>
           </div>
 
-          <q-card v-else class="recent-course-card q-pa-xl text-center">
+          <q-card v-else class="recent-course-card workspace-panel text-center">
             <q-icon name="school" size="64px" color="grey-6" />
             <div class="text-h6 q-mt-md">Todavía no tienes cursos creados</div>
             <div class="text-body2 text-grey-5 q-mt-sm">
@@ -414,7 +420,7 @@ function openCourseManager() {
 }
 
 function describeAlert(alert) {
-  if (alert.type === 'question') return alert.message
+  if (alert.type === 'question') return `${alert.message}${alert.reply_count ? ` · ${alert.reply_count} respuestas` : ''}`
   return `${alert.course_title} · ${alert.failed_activities_count || 0} fallos · ${alert.days_inactive || 0} días sin entrar`
 }
 
@@ -452,8 +458,7 @@ onMounted(loadDashboard)
 }
 
 .page-wrap {
-  max-width: 1320px;
-  margin: 0 auto;
+  width: min(100%, 1320px);
 }
 
 .hero-panel {
@@ -481,6 +486,7 @@ onMounted(loadDashboard)
   border-radius: 24px;
   background: rgba(13, 15, 35, 0.58);
   border: 1px solid rgba(118, 122, 180, 0.16);
+  padding: 20px;
 }
 
 .section-title {
@@ -491,5 +497,11 @@ onMounted(loadDashboard)
   border-radius: 22px;
   background: linear-gradient(145deg, rgba(28, 30, 66, 0.95), rgba(19, 21, 48, 0.95));
   border: 1px solid rgba(118, 122, 180, 0.18);
+}
+
+@media (max-width: 768px) {
+  .hero-summary {
+    padding: 16px;
+  }
 }
 </style>

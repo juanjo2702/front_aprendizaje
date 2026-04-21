@@ -108,6 +108,25 @@
               />
             </div>
 
+            <q-banner
+              v-if="currentCourse.has_certificate"
+              rounded
+              class="q-mt-md"
+              :class="currentCourseProgress?.certificate?.qualifies ? 'bg-positive text-white' : 'bg-dark text-grey-3'"
+            >
+              <div class="text-weight-medium q-mb-xs">Ruta para el certificado</div>
+              <div>
+                {{
+                  currentCourseProgress?.certificate?.message
+                    || (
+                      currentCourse.certificate_requires_final_exam
+                        ? `Este curso exige aprobar el examen final${currentCourse.certificate_final_lesson?.title ? `: ${currentCourse.certificate_final_lesson.title}` : ''}.`
+                        : `Necesitas completar el curso y alcanzar al menos ${currentCourse.certificate_min_score || 70}% para certificarte.`
+                    )
+                }}
+              </div>
+            </q-banner>
+
             <div class="column q-gutter-sm q-mt-lg">
               <q-btn
                 v-if="currentCourse.is_enrolled"
@@ -141,6 +160,9 @@
 
             <div class="column q-gutter-sm text-grey-4">
               <div><q-icon name="workspace_premium" class="q-mr-sm" /> Certificado: {{ currentCourse.has_certificate ? 'Incluido' : 'No incluido' }}</div>
+              <div v-if="currentCourse.has_certificate && currentCourse.certificate_requires_final_exam">
+                <q-icon name="fact_check" class="q-mr-sm" /> Examen final: {{ currentCourse.certificate_final_lesson?.title || 'Pendiente de configuración' }}
+              </div>
               <div><q-icon name="sports_esports" class="q-mr-sm" /> Gamificacion: {{ currentCourse.has_interactive_activities ? 'Si' : 'No' }}</div>
               <div><q-icon name="public" class="q-mr-sm" /> Idioma: {{ currentCourse.language || 'ES' }}</div>
               <div><q-icon name="military_tech" class="q-mr-sm" /> Nivel requerido: {{ currentCourse.required_level || 1 }}</div>

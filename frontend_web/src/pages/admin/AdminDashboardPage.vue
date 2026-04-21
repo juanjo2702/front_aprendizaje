@@ -1,7 +1,7 @@
 <template>
-  <q-page class="admin-page q-pa-xl">
-    <div class="page-wrap">
-      <section class="hero-panel q-pa-xl q-mb-lg">
+  <q-page class="admin-page workspace-page">
+    <div class="page-wrap workspace-wrap">
+      <section class="hero-panel workspace-hero q-mb-lg">
         <div class="row q-col-gutter-xl items-center">
           <div class="col-12 col-lg-8">
             <q-badge color="secondary" outline class="q-mb-md">Business Intelligence</q-badge>
@@ -44,7 +44,7 @@
       <template v-else>
         <div class="row q-col-gutter-md q-mb-lg">
           <div v-for="card in metricCards" :key="card.label" class="col-12 col-sm-6 col-xl-3">
-            <q-card class="metric-card q-pa-md">
+            <q-card class="metric-card workspace-summary-card">
               <div class="row items-center q-col-gutter-md">
                 <div class="col-auto">
                   <q-avatar size="54px" :color="card.color" text-color="white" :icon="card.icon" />
@@ -61,14 +61,17 @@
 
         <div class="row q-col-gutter-lg q-mb-lg">
           <div class="col-12 col-xl-7">
-            <q-card class="panel-card full-height">
+            <q-card class="panel-card workspace-panel full-height">
               <q-card-section>
                 <div class="text-h6 text-weight-bold">Popularidad por categoría</div>
                 <div class="text-caption text-grey-5">Las categorías con más matrículas completadas.</div>
               </q-card-section>
               <q-separator dark />
               <q-card-section>
-                <div v-if="!popularCategories.length" class="text-grey-5">Todavía no hay datos suficientes.</div>
+                <div v-if="!popularCategories.length" class="workspace-empty">
+                  <strong>Aún no hay datos suficientes.</strong>
+                  <span>La popularidad por categoría aparecerá cuando haya matrículas completadas y actividad real.</span>
+                </div>
                 <div v-else class="column q-gutter-md">
                   <div v-for="category in popularCategories" :key="category.id" class="category-row">
                     <div class="row items-center justify-between q-mb-xs">
@@ -88,7 +91,7 @@
           </div>
 
           <div class="col-12 col-xl-5">
-            <q-card class="panel-card full-height">
+            <q-card class="panel-card workspace-panel full-height">
               <q-card-section>
                 <div class="text-h6 text-weight-bold">Monitor de almacenamiento</div>
                 <div class="text-caption text-grey-5">Peso actual de videos y presión del disco local.</div>
@@ -131,7 +134,7 @@
 
         <div class="row q-col-gutter-lg q-mb-lg">
           <div class="col-12 col-xl-6">
-            <q-card class="panel-card full-height">
+            <q-card class="panel-card workspace-panel full-height">
               <q-card-section class="row items-center justify-between">
                 <div>
                   <div class="text-h6 text-weight-bold">Cuellos pedagógicos</div>
@@ -161,7 +164,7 @@
           </div>
 
           <div class="col-12 col-xl-6">
-            <q-card class="panel-card full-height">
+            <q-card class="panel-card workspace-panel full-height">
               <q-card-section class="row items-center justify-between">
                 <div>
                   <div class="text-h6 text-weight-bold">Logs recientes</div>
@@ -310,8 +313,7 @@ onMounted(loadDashboard)
 }
 
 .page-wrap {
-  max-width: 1340px;
-  margin: 0 auto;
+  width: min(100%, 1340px);
 }
 
 .hero-panel {
@@ -345,5 +347,11 @@ onMounted(loadDashboard)
 .category-row {
   display: grid;
   gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .metric-card {
+    padding: 18px;
+  }
 }
 </style>
