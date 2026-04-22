@@ -1,6 +1,6 @@
 <template>
-  <div class="login-page">
-    <div class="glass-card q-pa-xl">
+  <div class="login-page" data-cy="login-page">
+    <div class="glass-card q-pa-xl" data-cy="login-card">
       <!-- Logo -->
       <div class="text-center q-mb-xl">
         <q-icon name="school" size="48px" color="primary" />
@@ -9,9 +9,10 @@
       </div>
 
       <!-- Form -->
-      <q-form class="q-gutter-md" @submit.prevent="handleLogin">
+      <q-form class="q-gutter-md" data-cy="login-form" @submit.prevent="handleLogin">
         <q-input
           v-model="form.email"
+          data-cy="login-email"
           label="Correo electrónico"
           type="email"
           outlined
@@ -23,6 +24,7 @@
 
         <q-input
           v-model="form.password"
+          data-cy="login-password"
           label="Contraseña"
           :type="showPass ? 'text' : 'password'"
           outlined
@@ -42,6 +44,7 @@
         <q-btn
           type="submit"
           class="full-width btn-gradient q-mt-md"
+          data-cy="login-submit"
           :loading="loading"
           no-caps
           size="lg"
@@ -88,6 +91,7 @@
           outline
           no-caps
           class="col"
+          data-cy="demo-login-student"
           color="white"
           text-color="white"
           label="Estudiante"
@@ -98,6 +102,7 @@
           outline
           no-caps
           class="col"
+          data-cy="demo-login-instructor"
           color="white"
           text-color="white"
           label="Docente"
@@ -108,6 +113,7 @@
           outline
           no-caps
           class="col"
+          data-cy="demo-login-admin"
           color="white"
           text-color="white"
           label="Admin"

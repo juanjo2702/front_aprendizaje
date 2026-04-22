@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="settings-panel q-pa-md">
+  <q-card flat bordered class="settings-panel q-pa-md" data-cy="activity-settings-panel">
     <div class="row items-center justify-between q-mb-md">
       <div>
         <div class="text-subtitle1 text-weight-bold">Intentos y recompensas</div>
@@ -12,16 +12,16 @@
 
     <div class="row q-col-gutter-md">
       <div class="col-12 col-md-3">
-        <q-input v-model.number="maxAttemptsProxy" type="number" min="1" max="20" label="Intentos máximos" outlined dense />
+        <q-input v-model.number="maxAttemptsProxy" data-cy="activity-max-attempts-input" type="number" min="1" max="20" label="Intentos máximos" outlined dense />
       </div>
       <div class="col-12 col-md-3">
-        <q-input v-model.number="passingScoreProxy" type="number" min="0" max="100" suffix="%" label="Nota mínima" outlined dense />
+        <q-input v-model.number="passingScoreProxy" data-cy="activity-passing-score-input" type="number" min="0" max="100" suffix="%" label="Nota mínima" outlined dense />
       </div>
       <div class="col-12 col-md-3">
-        <q-input v-model.number="xpRewardProxy" type="number" min="0" max="5000" label="XP base" outlined dense />
+        <q-input v-model.number="xpRewardProxy" data-cy="activity-xp-reward-input" type="number" min="0" max="5000" label="XP base" outlined dense />
       </div>
       <div class="col-12 col-md-3">
-        <q-input v-model.number="coinRewardProxy" type="number" min="0" max="5000" label="Monedas base" outlined dense />
+        <q-input v-model.number="coinRewardProxy" data-cy="activity-coin-reward-input" type="number" min="0" max="5000" label="Monedas base" outlined dense />
       </div>
     </div>
 

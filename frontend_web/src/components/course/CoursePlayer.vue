@@ -195,14 +195,32 @@
               <q-list bordered separator>
                 <q-item v-for="entry in gamification.leaderboard" :key="entry.user_id">
                   <q-item-section avatar>
-                    <q-avatar color="primary" text-color="white">
-                      {{ entry.rank }}
-                    </q-avatar>
+                    <div class="leaderboard-rank">
+                      <q-avatar color="primary" text-color="white" size="28px">
+                        {{ entry.rank }}
+                      </q-avatar>
+                      <button class="leaderboard-avatar-btn" type="button" @click="openMiniProfile(entry.user_id)">
+                        <AvatarConMarco
+                          :src="entry.avatar"
+                          :name="entry.name"
+                          :size="40"
+                          :frame-class="entry.equipped_avatar_frame?.frame_class"
+                          :frame-svg="entry.equipped_avatar_frame?.frame_svg"
+                          clickable
+                        />
+                      </button>
+                    </div>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label>{{ entry.name }}</q-item-label>
+                    <q-item-label class="row items-center q-gutter-sm">
+                      <span>{{ entry.name }}</span>
+                      <q-badge v-if="entry.equipped_profile_title?.label" color="dark" text-color="warning">
+                        {{ entry.equipped_profile_title.label }}
+                      </q-badge>
+                    </q-item-label>
                     <q-item-label caption>
                       {{ entry.completed_activities }} actividades completadas
+                      <span v-if="entry.level_title"> · {{ entry.level_title }}</span>
                     </q-item-label>
                   </q-item-section>
                   <q-item-section side>
@@ -220,6 +238,8 @@
         </q-tab-panels>
       </div>
     </div>
+
+    <MiniProfileDialog v-model="miniProfileDialog" :user-id="activeMiniProfileId" />
   </div>
 </template>
 
@@ -229,6 +249,8 @@ import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services/api'
 import ActivityRenderer from 'src/components/course/ActivityRenderer.vue'
+import AvatarConMarco from 'src/components/shared/AvatarConMarco.vue'
+import MiniProfileDialog from 'src/components/shared/MiniProfileDialog.vue'
 
 const props = defineProps({
   initialLessonId: {
@@ -251,6 +273,8 @@ const responseData = ref(null)
 const activeTab = ref('content')
 const activityRenderKey = ref(0)
 const previewInteractiveResult = ref(null)
+const miniProfileDialog = ref(false)
+const activeMiniProfileId = ref(null)
 
 const lessonId = computed(() => Number(route.params.lessonId || props.initialLessonId))
 const lesson = computed(() => responseData.value?.lesson || {})
@@ -297,6 +321,12 @@ async function loadLesson(id) {
 function restartPreviewActivity() {
   previewInteractiveResult.value = null
   activityRenderKey.value += 1
+}
+
+function openMiniProfile(userId) {
+  if (!userId) return
+  activeMiniProfileId.value = userId
+  miniProfileDialog.value = true
 }
 
 function openLesson(id) {
@@ -444,5 +474,18 @@ async function onInteractiveCompleted(result) {
 .reading-content :deep(h3) {
   margin-top: 1rem;
   margin-bottom: 0.5rem;
+}
+
+.leaderboard-rank {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.leaderboard-avatar-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
 }
 </style>

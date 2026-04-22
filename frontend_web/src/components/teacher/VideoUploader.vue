@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="uploader-shell q-pa-md">
+  <q-card flat bordered class="uploader-shell q-pa-md" data-cy="chunked-uploader">
     <div class="row items-center justify-between q-mb-sm">
       <div>
         <div class="text-subtitle1 text-weight-bold">{{ label }}</div>
@@ -12,6 +12,7 @@
 
     <q-uploader
       ref="uploaderRef"
+      data-cy="chunked-uploader-input"
       flat
       bordered
       square
@@ -44,10 +45,11 @@
         {{ statusText }}
       </div>
       <div class="row q-gutter-sm">
-        <q-btn flat no-caps color="grey-5" label="Limpiar" :disable="uploading" @click="resetUpload" />
+        <q-btn flat no-caps color="grey-5" data-cy="chunked-upload-reset-btn" label="Limpiar" :disable="uploading" @click="resetUpload" />
         <q-btn
           color="primary"
           no-caps
+          data-cy="chunked-upload-submit-btn"
           label="Subir archivo"
           :disable="!selectedFile || uploading || !courseId"
           :loading="uploading"

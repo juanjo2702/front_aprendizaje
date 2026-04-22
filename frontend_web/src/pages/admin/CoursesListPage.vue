@@ -1,5 +1,5 @@
 <template>
-  <q-page class="admin-page q-pa-xl">
+  <q-page class="admin-page q-pa-xl" data-cy="admin-review-inbox-page">
     <div class="page-wrap">
       <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
         <div class="col-12 col-lg">
@@ -64,6 +64,7 @@
       <q-card class="panel-card">
         <q-card-section class="q-pa-none">
           <q-table
+            data-cy="admin-review-table"
             :rows="courses"
             :columns="columns"
             row-key="id"
@@ -104,7 +105,7 @@
             <template #body-cell-actions="props">
               <q-td :props="props">
                 <div class="row justify-end q-gutter-xs">
-                  <q-btn flat round color="primary" icon="assignment_turned_in" @click="openReview(props.row)" />
+                  <q-btn flat round color="primary" icon="assignment_turned_in" :data-cy="`review-course-btn-${props.row.id}`" @click="openReview(props.row)" />
                   <q-btn flat round color="secondary" icon="visibility" @click="previewCourse(props.row)" />
                   <q-btn flat round color="negative" icon="delete" @click="confirmDelete(props.row)" />
                 </div>

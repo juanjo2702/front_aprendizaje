@@ -1,13 +1,13 @@
 <template>
-  <q-page class="q-pa-xl page-wrap">
+  <q-page class="q-pa-xl page-wrap" data-cy="teacher-course-builder-page">
     <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
       <div class="col-12 col-md">
         <h2 class="q-mb-xs">Course Builder 2.0</h2>
         <p class="q-mb-none">Gestiona cursos con jerarquía explícita: Curso > Módulo > Lección.</p>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
-        <q-btn outline no-caps color="secondary" icon="science" label="Crear demo" :loading="creatingDemo" @click="createDemoCourse" />
-        <q-btn color="primary" no-caps icon="add" label="Crear curso" @click="openCreateDialog" />
+        <q-btn outline no-caps color="secondary" icon="science" label="Crear demo" data-cy="create-demo-course-btn" :loading="creatingDemo" @click="createDemoCourse" />
+        <q-btn color="primary" no-caps icon="add" label="Crear curso" data-cy="create-course-btn" @click="openCreateDialog" />
       </div>
     </div>
 
@@ -25,12 +25,12 @@
     <q-card class="glass-card q-pa-md q-mb-lg">
       <div class="row q-col-gutter-md items-end">
         <div class="col-12 col-md-6">
-          <q-input v-model="filters.search" outlined dense clearable label="Buscar curso">
+          <q-input v-model="filters.search" data-cy="course-search-input" outlined dense clearable label="Buscar curso">
             <template #prepend><q-icon name="search" /></template>
           </q-input>
         </div>
         <div class="col-12 col-md-3">
-          <q-select v-model="filters.status" :options="statusOptions" emit-value map-options outlined dense clearable label="Estado" />
+          <q-select v-model="filters.status" data-cy="course-status-filter" :options="statusOptions" emit-value map-options outlined dense clearable label="Estado" />
         </div>
         <div class="col-12 col-md-3 row justify-end">
           <q-btn flat no-caps color="grey-4" label="Limpiar filtros" @click="resetFilters" />
@@ -46,7 +46,7 @@
       <h4 class="q-mt-md" style="color:#8b8ba7">Todavía no hay cursos para mostrar</h4>
     </div>
     <div v-else class="column q-gutter-md">
-      <q-card v-for="course in filteredCourses" :key="course.id" class="glass-card q-pa-md">
+      <q-card v-for="course in filteredCourses" :key="course.id" class="glass-card q-pa-md" :data-cy="`course-card-${course.id}`">
         <div class="row q-col-gutter-lg items-center">
           <div class="col-12 col-md-7">
             <div class="row items-center q-gutter-sm q-mb-sm">
@@ -74,18 +74,19 @@
           </div>
           <div class="col-12 col-md-3">
             <div class="column q-gutter-sm">
-              <q-btn flat no-caps color="primary" icon="edit" label="Editar curso" @click="openEditDialog(course)" />
-              <q-btn flat no-caps color="deep-purple-3" icon="account_tree" label="Abrir Builder 2.0" @click="openBuilder(course)" />
+              <q-btn flat no-caps color="primary" icon="edit" label="Editar curso" :data-cy="`edit-course-btn-${course.id}`" @click="openEditDialog(course)" />
+              <q-btn flat no-caps color="deep-purple-3" icon="account_tree" label="Abrir Builder 2.0" :data-cy="`open-course-builder-btn-${course.id}`" @click="openBuilder(course)" />
               <q-btn
                 flat
                 no-caps
+                :data-cy="`course-status-toggle-${course.id}`"
                 :color="course.status === 'published' ? 'warning' : (course.status === 'pending' ? 'secondary' : 'positive')"
                 :icon="course.status === 'published' ? 'edit_off' : (course.status === 'pending' ? 'schedule_send' : 'publish')"
                 :label="statusActionLabel(course)"
                 @click="toggleCourseStatus(course)"
               />
               <div class="row justify-end q-gutter-sm">
-                <q-btn flat round color="secondary" icon="visibility" @click="previewCourse(course)" />
+                <q-btn flat round color="secondary" icon="visibility" :data-cy="`preview-course-btn-${course.id}`" @click="previewCourse(course)" />
                 <q-btn flat round color="negative" icon="delete" @click="confirmDelete(course)" />
               </div>
             </div>

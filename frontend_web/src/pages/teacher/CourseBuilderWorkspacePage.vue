@@ -1,5 +1,5 @@
 <template>
-  <q-page class="builder-page q-pa-xl">
+  <q-page class="builder-page q-pa-xl" data-cy="teacher-course-workspace">
     <div class="page-wrap">
       <section class="hero-panel q-pa-xl q-mb-lg">
         <div class="row q-col-gutter-xl items-center">
@@ -12,8 +12,9 @@
             </p>
 
             <div class="row q-gutter-sm">
-              <q-btn color="primary" no-caps icon="view_module" label="Nuevo módulo" @click="openModuleDialog()" />
+              <q-btn color="primary" no-caps icon="view_module" data-cy="new-module-btn" label="Nuevo módulo" @click="openModuleDialog()" />
               <q-btn
+                data-cy="send-course-review-btn"
                 :color="course?.status === 'published' ? 'warning' : (course?.status === 'pending' ? 'secondary' : 'positive')"
                 no-caps
                 :icon="course?.status === 'published' ? 'edit_off' : (course?.status === 'pending' ? 'schedule_send' : 'publish')"
@@ -26,6 +27,7 @@
                 no-caps
                 color="secondary"
                 icon="visibility"
+                data-cy="teacher-course-preview-btn"
                 label="Vista previa"
                 :disable="!course?.slug"
                 @click="previewCourse"
@@ -89,6 +91,7 @@
               <div class="col-12 col-md-4" v-if="certificationForm.has_certificate">
                 <q-input
                   v-model.number="certificationForm.certificate_min_score"
+                  data-cy="certificate-min-score-input"
                   type="number"
                   min="0"
                   max="100"
@@ -101,6 +104,7 @@
               <div class="col-12" v-if="certificationForm.has_certificate && certificationForm.certificate_requires_final_exam">
                 <q-select
                   v-model="certificationForm.certificate_final_lesson_id"
+                  data-cy="certificate-final-lesson-select"
                   :options="interactiveLessonOptions"
                   emit-value
                   map-options
@@ -140,6 +144,7 @@
                 color="primary"
                 no-caps
                 icon="verified"
+                data-cy="save-certification-settings-btn"
                 label="Guardar ruta de certificación"
                 :loading="certificationSaving"
                 :disable="!course?.id"
@@ -231,7 +236,7 @@
               <q-card flat bordered class="module-actions q-pa-md">
                 <div class="text-subtitle2 text-weight-bold q-mb-sm">Acciones del módulo</div>
                 <div class="column q-gutter-sm">
-                  <q-btn color="primary" no-caps icon="add" label="Añadir lección" @click="openLessonDialog(module)" />
+                  <q-btn color="primary" no-caps icon="add" :data-cy="`add-lesson-btn-${module.id}`" label="Añadir lección" @click="openLessonDialog(module)" />
                   <q-btn flat no-caps color="secondary" icon="edit" label="Editar módulo" @click="openModuleDialog(module)" />
                   <q-btn flat no-caps color="negative" icon="delete" label="Eliminar módulo" @click="removeModule(module)" />
                 </div>
@@ -243,14 +248,14 @@
     </div>
 
     <q-dialog v-model="moduleDialog" persistent>
-      <q-card class="form-dialog-card">
+      <q-card class="form-dialog-card" data-cy="module-dialog">
         <q-card-section class="row items-center justify-between">
           <div class="text-h6">{{ editingModule ? 'Editar módulo' : 'Crear módulo' }}</div>
           <q-btn flat round dense icon="close" @click="closeModuleDialog" />
         </q-card-section>
         <q-card-section class="q-pt-none">
           <div class="row q-col-gutter-md">
-            <div class="col-12"><q-input v-model="moduleForm.title" label="Título del módulo" outlined dense /></div>
+            <div class="col-12"><q-input v-model="moduleForm.title" data-cy="module-title-input" label="Título del módulo" outlined dense /></div>
             <div class="col-12">
               <q-input v-model="moduleForm.description" type="textarea" label="Descripción" outlined autogrow />
             </div>
@@ -261,23 +266,24 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat no-caps color="grey-5" label="Cancelar" @click="closeModuleDialog" />
-          <q-btn color="primary" no-caps :loading="moduleSaving" label="Guardar módulo" @click="saveModule" />
+          <q-btn color="primary" no-caps data-cy="save-module-btn" :loading="moduleSaving" label="Guardar módulo" @click="saveModule" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <q-dialog v-model="lessonDialog" persistent>
-      <q-card class="dialog-card">
+      <q-card class="dialog-card" data-cy="lesson-dialog">
         <q-card-section class="row items-center justify-between">
           <div class="text-h6">{{ editingLesson ? 'Editar lección' : 'Crear lección' }}</div>
           <q-btn flat round dense icon="close" @click="closeLessonDialog" />
         </q-card-section>
         <q-card-section class="q-pt-none">
           <div class="row q-col-gutter-md">
-            <div class="col-12 col-md-8"><q-input v-model="lessonForm.title" label="Título de la lección" outlined dense /></div>
+            <div class="col-12 col-md-8"><q-input v-model="lessonForm.title" data-cy="lesson-title-input" label="Título de la lección" outlined dense /></div>
             <div class="col-12 col-md-4">
               <q-select
                 v-model="lessonForm.type"
+                data-cy="lesson-type-select"
                 :options="lessonTypeOptions"
                 emit-value
                 map-options
@@ -299,6 +305,7 @@
             <div v-if="['video', 'resource'].includes(lessonForm.type)" class="col-12 col-md-4">
               <q-select
                 v-model="lessonForm.source_mode"
+                data-cy="lesson-source-mode-select"
                 :options="sourceModeOptions"
                 emit-value
                 map-options
@@ -360,9 +367,10 @@
 
             <template v-if="lessonForm.type === 'interactive'">
               <div class="col-12 col-md-4">
-                <q-select
-                  v-model="lessonForm.activity_type"
-                  :options="activityTypeOptions"
+              <q-select
+                v-model="lessonForm.activity_type"
+                data-cy="activity-type-select"
+                :options="activityTypeOptions"
                   emit-value
                   map-options
                   label="Tipo de actividad"
@@ -372,7 +380,7 @@
               </div>
               <div class="col-12 col-md-8 row items-center justify-end q-gutter-sm">
                 <q-btn flat no-caps color="primary" icon="list_alt" label="Banco de preguntas" @click="importTriviaBank" />
-                <q-btn flat no-caps color="secondary" icon="auto_fix_high" label="Cargar plantilla" @click="applyInteractiveTemplate" />
+                <q-btn flat no-caps color="secondary" icon="auto_fix_high" data-cy="load-activity-template-btn" label="Cargar plantilla" @click="applyInteractiveTemplate" />
               </div>
               <div class="col-12">
                 <q-banner rounded class="bg-dark text-grey-4">
@@ -382,6 +390,7 @@
               <div class="col-12">
                 <q-input
                   v-model="lessonForm.interactive_config_text"
+                  data-cy="activity-config-json-input"
                   type="textarea"
                   label="Configuración JSON"
                   outlined
@@ -408,7 +417,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat no-caps color="grey-5" label="Cancelar" @click="closeLessonDialog" />
-          <q-btn color="primary" no-caps :loading="lessonSaving" label="Guardar lección" @click="saveLesson" />
+          <q-btn color="primary" no-caps data-cy="save-lesson-btn" :loading="lessonSaving" label="Guardar lección" @click="saveLesson" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -728,22 +737,21 @@ function importTriviaBank() {
     return
   }
 
-  $q.dialog({
-    title: 'Banco de preguntas del curso',
-    message: 'Selecciona las preguntas que deseas importar a esta actividad:',
-    options: {
-      type: 'checkbox',
-      model: [],
+    $q.dialog({
+      title: 'Banco de preguntas del curso',
+      message: 'Selecciona las preguntas que deseas importar a esta actividad:',
+      options: {
+        type: 'checkbox',
+        model: [],
       items: allQuestions.map((q, idx) => ({
         label: q.prompt || `Pregunta ${idx + 1}`,
         value: JSON.stringify(q),
-      })),
-    },
-    cancel: true,
-    persistent: true,
-    ok: { label: 'Importar seleccionadas', color: 'primary', noCaps: true },
-    cancel: { label: 'Cancelar', color: 'grey-8', flat: true, noCaps: true },
-  }).onOk((selectedJsonStrings) => {
+            })),
+      },
+      persistent: true,
+      ok: { label: 'Importar seleccionadas', color: 'primary', noCaps: true },
+      cancel: { label: 'Cancelar', color: 'grey-8', flat: true, noCaps: true },
+    }).onOk((selectedJsonStrings) => {
     if (!selectedJsonStrings || selectedJsonStrings.length === 0) return
 
     try {
@@ -762,7 +770,7 @@ function importTriviaBank() {
 
       lessonForm.value.interactive_config_text = JSON.stringify(currentConfig, null, 2)
       $q.notify({ type: 'positive', message: `Se importaron ${selectedQs.length} preguntas correctamente.` })
-    } catch (e) {
+    } catch {
       $q.notify({ type: 'negative', message: 'Ocurrió un error al procesar el JSON.' })
     }
   })

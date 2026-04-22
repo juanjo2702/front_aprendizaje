@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf" class="admin-layout">
+  <q-layout view="lHh Lpr lFf" class="admin-layout" data-cy="admin-layout">
     <q-header class="admin-header" bordered>
       <q-toolbar class="q-px-lg q-py-sm">
         <q-btn flat dense round icon="menu" class="lt-md q-mr-sm" @click="drawerOpen = !drawerOpen" />
@@ -80,6 +80,7 @@
       :behavior="$q.screen.gt.sm ? 'desktop' : 'mobile'"
       :overlay="!$q.screen.gt.sm"
       class="admin-drawer"
+      data-cy="admin-sidebar"
     >
       <div class="drawer-shell">
         <q-card flat class="drawer-profile q-pa-md q-mb-md">

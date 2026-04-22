@@ -2,6 +2,7 @@
   <div class="video-shell">
     <video
       ref="videoElement"
+      data-cy="student-video-element"
       class="video-js vjs-big-play-centered vjs-default-skin"
       playsinline
       controls

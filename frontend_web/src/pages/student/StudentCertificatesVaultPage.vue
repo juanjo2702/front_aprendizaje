@@ -1,5 +1,5 @@
 <template>
-  <q-page class="student-page">
+  <q-page class="student-page" data-cy="student-certificates-page">
     <div class="section-head">
       <div>
         <div class="text-h4 text-weight-bold">Boveda de certificados</div>
@@ -23,7 +23,7 @@
         <template #body-cell-actions="props">
           <q-td :props="props">
             <div class="row q-gutter-sm">
-              <q-btn flat color="primary" no-caps icon="download" label="Descargar" @click="downloadCertificate(props.row)" />
+              <q-btn flat color="primary" no-caps icon="download" :data-cy="`certificate-download-btn-${props.row.id}`" label="Descargar" @click="downloadCertificate(props.row)" />
               <q-btn flat color="secondary" no-caps icon="content_copy" label="Copiar enlace" @click="copyValidationLink(props.row)" />
             </div>
           </q-td>

@@ -1,5 +1,5 @@
 <template>
-  <q-page class="student-page">
+  <q-page class="student-page" data-cy="student-course-detail-page">
     <div v-if="currentCourseLoading" class="row q-col-gutter-md">
       <div class="col-12 col-lg-8"><q-skeleton dark type="rect" height="420px" /></div>
       <div class="col-12 col-lg-4"><q-skeleton dark type="rect" height="420px" /></div>
@@ -132,6 +132,7 @@
                 v-if="currentCourse.is_enrolled"
                 color="primary"
                 no-caps
+                data-cy="continue-course-btn"
                 icon="play_arrow"
                 label="Continuar curso"
                 @click="goToLearning"
@@ -140,6 +141,7 @@
                 v-else
                 color="primary"
                 no-caps
+                data-cy="buy-course-qr-btn"
                 icon="qr_code_2"
                 :loading="paymentLoading"
                 :disable="currentCourse.is_level_locked"
@@ -188,7 +190,7 @@
     </template>
 
     <q-dialog v-model="checkoutDialog">
-      <q-card class="checkout-card">
+      <q-card class="checkout-card" data-cy="checkout-dialog">
         <q-card-section class="row items-center justify-between">
           <div>
             <div class="text-h6">Checkout QR</div>
@@ -196,8 +198,49 @@
           </div>
           <q-btn flat round dense icon="close" @click="closeCheckout" />
         </q-card-section>
-        <q-card-section v-if="paymentIntent">
-          <div class="text-center">
+        <q-card-section class="column q-gutter-md">
+          <q-input
+            v-model="couponCode"
+            data-cy="apply-coupon-input"
+            outlined
+            dark
+            dense
+            label="Aplicar cupón"
+            hint="Solo se aceptan cupones comprados por tu cuenta."
+          >
+            <template #append>
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="secondary"
+                data-cy="generate-qr-btn"
+                label="Generar QR"
+                :loading="paymentLoading"
+                @click="startCheckout"
+              />
+            </template>
+          </q-input>
+
+          <q-banner v-if="checkoutError" rounded class="bg-negative text-white">
+            {{ checkoutError }}
+          </q-banner>
+
+          <q-banner v-if="paymentIntent" rounded class="bg-dark text-grey-3">
+            <div class="text-weight-medium">Resumen del cobro</div>
+            <div class="q-mt-xs">
+              Original: {{ formatPrice(paymentIntent.original_amount || currentCourse.price) }}
+            </div>
+            <div v-if="paymentIntent.discount_amount" class="q-mt-xs">
+              Descuento: -{{ formatPrice(paymentIntent.discount_amount) }}
+              <span v-if="paymentIntent.discount_percent">({{ paymentIntent.discount_percent }}%)</span>
+            </div>
+            <div class="q-mt-xs">
+              Total a pagar: {{ formatPrice(paymentIntent.amount) }}
+            </div>
+          </q-banner>
+
+          <div v-if="paymentIntent?.qr_code" class="text-center">
             <img class="checkout-qr" :src="paymentIntent.qr_code" alt="QR de pago" />
             <div class="text-subtitle1 q-mt-md">Escanea para completar la compra</div>
             <div class="text-caption text-grey-5">
@@ -212,12 +255,17 @@
               outline
               color="warning"
               no-caps
+              data-cy="simulate-payment-btn"
               icon="bug_report"
               label="Simular pago (demo)"
               :loading="simulatingPayment"
               @click="simulatePayment"
             />
           </div>
+
+          <q-banner v-else-if="paymentIntent?.status === 'completed'" rounded class="bg-positive text-white">
+            Compra confirmada. El curso quedó desbloqueado con el cupón aplicado.
+          </q-banner>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -242,6 +290,8 @@ const { currentCourse, currentCourseLoading, currentCourseProgress, paymentInten
 const checkoutDialog = ref(false)
 const paymentCompleted = ref(false)
 const simulatingPayment = ref(false)
+const couponCode = ref('')
+const checkoutError = ref('')
 const showSimulateButton = computed(() => import.meta.env.DEV || window.location.hostname === 'localhost')
 
 const learningItems = computed(() => {
@@ -306,18 +356,42 @@ function goToLearning() {
 
 async function openCheckout() {
   paymentCompleted.value = false
-  const intent = await studentStore.createPaymentIntent(currentCourse.value.id)
+  checkoutError.value = ''
+  couponCode.value = ''
+  studentStore.clearPaymentIntent()
   checkoutDialog.value = true
-  studentStore.startPaymentStatusPolling(intent.transaction_id, async () => {
-    paymentCompleted.value = true
-    $q.notify({ type: 'positive', message: 'Pago confirmado. Ya puedes ingresar al curso.' })
-    await studentStore.loadCourseDetail(route.params.slug)
-  })
 }
 
 function closeCheckout() {
   checkoutDialog.value = false
+  checkoutError.value = ''
+  couponCode.value = ''
   studentStore.clearPaymentIntent()
+}
+
+async function startCheckout() {
+  checkoutError.value = ''
+  studentStore.clearPaymentIntent()
+  paymentCompleted.value = false
+
+  try {
+    const intent = await studentStore.createPaymentIntent(currentCourse.value.id, couponCode.value.trim())
+    paymentCompleted.value = intent.status === 'completed'
+
+    if (intent.status === 'completed') {
+      $q.notify({ type: 'positive', message: 'Compra confirmada. Ya puedes ingresar al curso.' })
+      await Promise.all([studentStore.loadCourseDetail(route.params.slug), studentStore.loadInventory()])
+      return
+    }
+
+    studentStore.startPaymentStatusPolling(intent.transaction_id, async () => {
+      paymentCompleted.value = true
+      $q.notify({ type: 'positive', message: 'Pago confirmado. Ya puedes ingresar al curso.' })
+      await Promise.all([studentStore.loadCourseDetail(route.params.slug), studentStore.loadInventory()])
+    })
+  } catch (error) {
+    checkoutError.value = error?.response?.data?.message || 'No se pudo generar el checkout.'
+  }
 }
 
 async function simulatePayment() {
@@ -336,7 +410,7 @@ async function simulatePayment() {
     })
 
     studentStore.clearPaymentIntent()
-    await studentStore.loadCourseDetail(route.params.slug)
+    await Promise.all([studentStore.loadCourseDetail(route.params.slug), studentStore.loadInventory()])
   } finally {
     simulatingPayment.value = false
   }

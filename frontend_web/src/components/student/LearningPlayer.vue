@@ -1,5 +1,5 @@
 <template>
-  <div class="learning-player">
+  <div class="learning-player" data-cy="learning-player">
     <div v-if="loading" class="row justify-center q-py-xl">
       <q-spinner color="primary" size="52px" />
     </div>
@@ -43,7 +43,7 @@
         </q-scroll-area>
       </aside>
 
-      <section class="player-stage">
+      <section class="player-stage" data-cy="learning-stage">
         <div class="stage-head">
           <div>
             <div class="text-overline text-secondary">{{ lessonTypeLabel(content.kind) }}</div>
@@ -66,7 +66,7 @@
           </div>
         </div>
 
-        <div class="stage-card">
+        <div class="stage-card" data-cy="lesson-stage-card">
           <component
             :is="currentRenderer"
             v-bind="rendererProps"
@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -202,6 +202,15 @@ watch(
 
 onMounted(() => {
   studentStore.flushPendingProgress()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('qa:interactive-completed', onQaInteractiveCompleted)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('qa:interactive-completed', onQaInteractiveCompleted)
+  }
 })
 
 async function loadLesson(id) {
@@ -240,6 +249,10 @@ function lessonIcon(type) {
     resource: 'description',
     interactive: 'extension',
   }[type] || 'radio_button_checked')
+}
+
+function onQaInteractiveCompleted(event) {
+  handleInteractiveCompleted(event?.detail || {})
 }
 
 async function handleVideoEnded() {

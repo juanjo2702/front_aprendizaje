@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="comment-shell">
+  <q-card flat bordered class="comment-shell" data-cy="comment-section">
     <div class="section-head">
       <div>
         <div class="text-h6 text-weight-bold">Comentarios y dudas</div>
@@ -7,7 +7,7 @@
           Conversación del tema, estilo aula activa. Solo participan alumnos inscritos y docentes del curso.
         </div>
       </div>
-      <q-btn flat round dense icon="refresh" color="grey-5" @click="loadComments" :loading="loading" />
+      <q-btn flat round dense icon="refresh" color="grey-5" :loading="loading" @click="loadComments" />
     </div>
 
     <q-banner v-if="errorMessage" rounded class="bg-negative text-white q-mb-md">
@@ -15,10 +15,13 @@
     </q-banner>
 
     <div class="composer">
-      <q-avatar size="44px" class="composer-avatar">
-        <img v-if="auth.user?.avatar" :src="auth.user.avatar" />
-        <span v-else>{{ initials }}</span>
-      </q-avatar>
+      <AvatarConMarco
+        :src="auth.user?.avatar"
+        :name="auth.user?.name"
+        :size="44"
+        :frame-class="auth.user?.equipped_avatar_frame?.frame_class"
+        :frame-svg="auth.user?.equipped_avatar_frame?.frame_svg"
+      />
 
       <div class="composer-body">
         <q-input
@@ -54,16 +57,25 @@
     </div>
 
     <div v-else class="comment-list">
-      <article v-for="comment in comments" :key="comment.id" class="comment-card">
+      <article v-for="comment in comments" :key="comment.id" class="comment-card" :data-cy="`comment-card-${comment.id}`">
         <div class="comment-row">
-          <q-avatar size="44px" class="comment-avatar">
-            <img v-if="comment.author?.avatar" :src="comment.author.avatar" />
-            <span v-else>{{ initialsFrom(comment.author?.name) }}</span>
-          </q-avatar>
+          <button class="avatar-button" type="button" :data-cy="`comment-avatar-btn-${comment.id}`" @click="openMiniProfile(comment.author?.id)">
+            <AvatarConMarco
+              :src="comment.author?.avatar"
+              :name="comment.author?.name"
+              :size="44"
+              :frame-class="comment.author?.equipped_avatar_frame?.frame_class"
+              :frame-svg="comment.author?.equipped_avatar_frame?.frame_svg"
+              clickable
+            />
+          </button>
 
           <div class="comment-body">
             <div class="comment-meta">
               <span class="text-weight-bold">{{ comment.author?.name || 'Usuario' }}</span>
+              <q-badge v-if="comment.author?.equipped_profile_title?.label" color="dark" text-color="warning">
+                {{ comment.author.equipped_profile_title.label }}
+              </q-badge>
               <q-badge
                 v-if="comment.author?.level_title"
                 outline
@@ -117,14 +129,23 @@
 
             <div v-if="comment.replies?.length" class="reply-list">
               <div v-for="reply in comment.replies" :key="reply.id" class="reply-card">
-                <q-avatar size="36px" class="reply-avatar">
-                  <img v-if="reply.author?.avatar" :src="reply.author.avatar" />
-                  <span v-else>{{ initialsFrom(reply.author?.name) }}</span>
-                </q-avatar>
+                <button class="avatar-button" type="button" :data-cy="`reply-avatar-btn-${reply.id}`" @click="openMiniProfile(reply.author?.id)">
+                  <AvatarConMarco
+                    :src="reply.author?.avatar"
+                    :name="reply.author?.name"
+                    :size="36"
+                    :frame-class="reply.author?.equipped_avatar_frame?.frame_class"
+                    :frame-svg="reply.author?.equipped_avatar_frame?.frame_svg"
+                    clickable
+                  />
+                </button>
 
                 <div class="reply-content">
                   <div class="comment-meta">
                     <span class="text-weight-medium">{{ reply.author?.name || 'Usuario' }}</span>
+                    <q-badge v-if="reply.author?.equipped_profile_title?.label" color="dark" text-color="warning">
+                      {{ reply.author.equipped_profile_title.label }}
+                    </q-badge>
                     <q-badge
                       v-if="reply.author?.level_title"
                       outline
@@ -142,13 +163,17 @@
         </div>
       </article>
     </div>
+
+    <MiniProfileDialog v-model="miniProfileDialog" :user-id="activeMiniProfileId" />
   </q-card>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useAuthStore } from 'src/stores/auth'
 import { api } from 'src/services/api'
+import AvatarConMarco from 'src/components/shared/AvatarConMarco.vue'
+import MiniProfileDialog from 'src/components/shared/MiniProfileDialog.vue'
 
 const props = defineProps({
   commentTarget: {
@@ -167,8 +192,8 @@ const isQuestion = ref(true)
 const comments = ref([])
 const errorMessage = ref('')
 const activeReplyId = ref(null)
-
-const initials = computed(() => initialsFrom(auth.user?.name))
+const miniProfileDialog = ref(false)
+const activeMiniProfileId = ref(null)
 
 watch(
   () => props.commentTarget,
@@ -187,15 +212,6 @@ onMounted(() => {
     loadComments()
   }
 })
-
-function initialsFrom(name = '') {
-  return String(name || '')
-    .split(' ')
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
 
 function formatDate(value) {
   if (!value) return ''
@@ -221,6 +237,12 @@ function toggleReply(commentId) {
 function cancelReply() {
   activeReplyId.value = null
   replyDraft.value = ''
+}
+
+function openMiniProfile(userId) {
+  if (!userId) return
+  activeMiniProfileId.value = userId
+  miniProfileDialog.value = true
 }
 
 async function loadComments() {
@@ -312,12 +334,6 @@ async function submitReply(comment) {
   margin-bottom: 24px;
 }
 
-.composer-avatar,
-.comment-avatar,
-.reply-avatar {
-  background: rgba(255, 255, 255, 0.06);
-}
-
 .composer-body {
   display: flex;
   flex-direction: column;
@@ -395,6 +411,16 @@ async function submitReply(comment) {
   padding: 14px;
   border-radius: 18px;
   background: rgba(10, 14, 30, 0.58);
+}
+
+.avatar-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .fade-slide-enter-active,

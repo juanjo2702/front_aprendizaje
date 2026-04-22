@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf" class="student-shell">
+  <q-layout view="lHh Lpr lFf" class="student-shell" data-cy="student-layout">
     <q-header class="student-header" bordered>
       <q-toolbar class="toolbar-shell">
         <q-btn flat round dense icon="menu" class="lt-lg" @click="drawerOpen = !drawerOpen" />
@@ -21,10 +21,29 @@
           <q-chip flat color="dark">{{ gamificationSummary.levelTitle }}</q-chip>
         </div>
 
-        <q-avatar size="42px" class="q-ml-md">
-          <img v-if="auth.user?.avatar" :src="auth.user.avatar" />
-          <span v-else>{{ initials }}</span>
-        </q-avatar>
+        <q-btn flat round dense class="q-ml-sm">
+          <q-avatar size="42px">
+            <img v-if="auth.user?.avatar" :src="auth.user.avatar" />
+            <span v-else>{{ initials }}</span>
+          </q-avatar>
+          <q-menu class="bg-dark text-white border-secondary">
+            <q-list style="min-width: 150px">
+              <q-item clickable v-close-popup :to="{ name: 'student-profile' }">
+                <q-item-section avatar>
+                  <q-icon name="manage_accounts" color="secondary" />
+                </q-item-section>
+                <q-item-section>Mi Perfil</q-item-section>
+              </q-item>
+              <q-separator dark />
+              <q-item clickable v-close-popup @click="logout">
+                <q-item-section avatar>
+                  <q-icon name="logout" color="negative" />
+                </q-item-section>
+                <q-item-section>Cerrar Sesión</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -34,15 +53,19 @@
       :width="296"
       bordered
       class="student-drawer"
+      data-cy="student-sidebar"
     >
       <div class="drawer-head">
         <q-avatar size="64px" class="drawer-avatar">
           <img v-if="auth.user?.avatar" :src="auth.user.avatar" />
           <span v-else>{{ initials }}</span>
         </q-avatar>
-        <div>
-          <div class="text-h6 text-weight-bold">{{ auth.user?.name || 'Estudiante' }}</div>
-          <div class="text-caption text-grey-5">Ruta activa de aprendizaje</div>
+        <div class="row items-center justify-between full-width">
+          <div>
+            <div class="text-h6 text-weight-bold" style="line-height: 1.2">{{ auth.user?.name || 'Estudiante' }}</div>
+            <div class="text-caption text-grey-5">Ruta activa de aprendizaje</div>
+          </div>
+          <q-btn flat round dense icon="settings" color="grey-5" :to="{ name: 'student-profile' }" />
         </div>
       </div>
 

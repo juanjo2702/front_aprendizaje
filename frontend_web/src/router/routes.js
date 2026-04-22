@@ -123,6 +123,18 @@ const routes = [
         },
       },
       {
+        path: 'profile',
+        name: 'student-profile',
+        component: () => import('pages/user/UserProfilePage.vue'),
+        meta: {
+          studentTitle: 'Mi perfil',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Mi perfil' },
+          ],
+        },
+      },
+      {
         path: 'certificates',
         name: 'student-certificates-vault',
         component: () => import('pages/student/StudentCertificatesVaultPage.vue'),
@@ -435,7 +447,6 @@ const routes = [
   // ─── Legacy Redirects (compatibility) ───────────────────
   { path: '/dashboard', redirect: { name: 'student-dashboard' } },
   { path: '/lessons/:lessonId', redirect: (to) => `/student/learn/${to.params.lessonId}` },
-  { path: '/user/profile', redirect: { name: 'student-inventory' } },
   { path: '/user/courses', redirect: { name: 'student-my-learning' } },
   { path: '/user/activity', redirect: { name: 'student-dashboard' } },
   { path: '/student/profile', redirect: { name: 'student-inventory' } },

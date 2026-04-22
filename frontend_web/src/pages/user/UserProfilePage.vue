@@ -1,12 +1,11 @@
-﻿<template>
+<template>
   <q-page class="user-profile-page q-pa-xl" style="max-width: 1200px; margin: 0 auto">
     <!-- Header -->
-    <div class="row items-center justify-between q-mb-lg">
+    <div class="row items-center justify-between q-mb-xl">
       <div>
-        <h2 class="q-mb-xs">Mi perfil</h2>
-        <p class="q-mb-none">Administra tu información personal y preferencias</p>
+        <h4 class="q-my-none text-weight-bold">Configuración de la cuenta</h4>
+        <p class="text-grey-5 q-mt-sm q-mb-none">Administra tu información personal, presencia pública y preferencias de seguridad.</p>
       </div>
-      <q-btn flat no-caps icon="arrow_back" label="Volver al dashboard" to="/dashboard" />
     </div>
 
     <div class="row q-gutter-xl">
@@ -24,17 +23,21 @@
             </div>
           </div>
 
-          <div class="row q-gutter-md q-mb-md">
-            <div class="col-6">
-              <q-input v-model="user.phone" label="Teléfono" outlined dense />
-            </div>
-            <div class="col-6">
-              <q-input v-model="user.country" label="País" outlined dense />
-            </div>
+        <div class="row q-gutter-md q-mb-md">
+          <div class="col-6">
+              <q-input v-model="user.headline" label="Título público" outlined dense />
           </div>
+          <div class="col-6">
+              <q-input v-model="user.location" label="Ubicación" outlined dense />
+          </div>
+        </div>
 
           <div class="q-mb-md">
             <q-input v-model="user.bio" label="Biografía" type="textarea" outlined dense rows="3" />
+          </div>
+
+          <div class="q-mb-md">
+            <q-input v-model="user.mini_bio" label="Mini-bio pública" type="textarea" outlined dense rows="2" />
           </div>
 
           <div class="row justify-end">
@@ -54,13 +57,6 @@
               color="primary"
               @click="changePassword"
             />
-            <q-btn
-              flat
-              no-caps
-              label="Ver dispositivos conectados"
-              icon="mdi-devices"
-              color="primary"
-            />
           </div>
         </q-card>
       </div>
@@ -70,10 +66,18 @@
         <!-- Avatar -->
         <q-card class="glass-card q-pa-lg q-mb-lg">
           <div class="text-center">
-            <q-avatar size="120px" class="q-mb-md">
-              <img :src="user.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" />
-            </q-avatar>
-            <q-btn flat no-caps label="Cambiar foto" color="primary" />
+            <AvatarFrame
+              :src="user.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'"
+              :name="user.name"
+              :size="108"
+              :frame-class="user.equipped_avatar_frame?.frame_class"
+              :frame-svg="user.equipped_avatar_frame?.frame_svg"
+            />
+            <q-badge v-if="user.equipped_profile_title?.label" color="dark" text-color="warning" class="q-mt-md">
+              {{ user.equipped_profile_title.label }}
+            </q-badge>
+            <br>
+            <q-btn flat no-caps label="Cambiar foto" color="primary" class="q-mt-md" />
           </div>
         </q-card>
 
@@ -108,15 +112,19 @@
 import { ref, onMounted } from 'vue'
 import { api } from 'src/services/api'
 import { useAuthStore } from 'src/stores/auth'
+import AvatarFrame from 'src/components/shared/AvatarFrame.vue'
 
 const auth = useAuthStore()
 const user = ref({
   name: '',
   email: '',
-  phone: '',
-  country: '',
+  headline: '',
+  location: '',
   bio: '',
+  mini_bio: '',
   avatar: '',
+  equipped_avatar_frame: null,
+  equipped_profile_title: null,
 })
 const stats = ref({})
 const saving = ref(false)
@@ -137,8 +145,7 @@ async function saveProfile() {
   saving.value = true
   try {
     await api.put('/profile', user.value)
-    auth.user = user.value
-    localStorage.setItem('user', JSON.stringify(user.value))
+    await auth.fetchProfile()
   } catch (error) {
     console.error('Error guardando perfil:', error)
   } finally {

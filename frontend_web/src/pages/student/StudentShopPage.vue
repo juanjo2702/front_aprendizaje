@@ -1,5 +1,5 @@
 <template>
-  <q-page class="student-page">
+  <q-page class="student-page" data-cy="student-shop-page">
     <section class="hero-grid">
       <q-card flat bordered class="hero-card hero-card--primary">
         <div class="text-overline text-secondary">Coin Shop</div>
@@ -88,7 +88,7 @@
     </div>
 
     <div v-else class="shop-grid">
-      <q-card v-for="item in shop.items" :key="item.id" flat bordered class="shop-card">
+      <q-card v-for="item in shop.items" :key="item.id" flat bordered class="shop-card" :data-cy="`shop-item-card-${item.id}`">
         <div class="row items-start justify-between q-mb-md">
           <div>
             <q-badge outline color="secondary">{{ typeLabel(item.type) }}</q-badge>
@@ -120,10 +120,11 @@
           <q-btn
             color="primary"
             no-caps
+            :data-cy="`shop-item-buy-btn-${item.id}`"
             :disable="item.already_owned || item.locked_by_level || !item.can_afford"
             :loading="purchasingId === item.id"
             label="Comprar"
-            @click="purchase(item)"
+            @click="purchaseItem(item)"
           />
         </div>
       </q-card>
@@ -228,7 +229,7 @@ async function reloadShop() {
   ])
 }
 
-async function purchase(item) {
+async function purchaseItem(item) {
   purchasingId.value = item.id
 
   try {

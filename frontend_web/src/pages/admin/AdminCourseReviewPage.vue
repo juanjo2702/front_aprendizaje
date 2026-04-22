@@ -1,5 +1,5 @@
 <template>
-  <q-page class="admin-page q-pa-xl">
+  <q-page class="admin-page q-pa-xl" data-cy="admin-course-review-page">
     <div class="page-wrap">
       <div v-if="loading" class="q-py-md">
         <q-skeleton v-for="n in 4" :key="n" type="rect" height="140px" class="q-mb-md" dark />
@@ -17,7 +17,7 @@
                 {{ course.short_description || course.description || 'Este curso aún no tiene descripción.' }}
               </p>
               <div class="row q-gutter-sm">
-                <q-btn color="primary" no-caps icon="visibility" label="Preview curso" @click="previewCourse" />
+                <q-btn color="primary" no-caps icon="visibility" data-cy="admin-preview-course-btn" label="Preview curso" @click="previewCourse" />
                 <q-btn flat no-caps color="secondary" icon="folder" label="Abrir builder" @click="openBuilder" />
               </div>
             </div>
@@ -68,7 +68,7 @@
                       </q-item-section>
                       <q-item-section side class="row items-center q-gutter-sm">
                         <q-badge outline color="secondary">{{ lessonTypeLabel(lesson.type) }}</q-badge>
-                        <q-btn flat round color="primary" icon="play_circle" @click="previewLesson(lesson)" />
+                        <q-btn flat round color="primary" icon="play_circle" :data-cy="`admin-preview-lesson-btn-${lesson.id}`" @click="previewLesson(lesson)" />
                       </q-item-section>
                     </q-item>
                   </q-list>
@@ -94,7 +94,7 @@
                 />
 
                 <div class="row q-gutter-sm">
-                  <q-btn color="positive" no-caps label="Aprobar y publicar" :loading="savingStatus" @click="updateStatus('published')" />
+                  <q-btn color="positive" no-caps data-cy="course-publish-btn" label="Aprobar y publicar" :loading="savingStatus" @click="updateStatus('published')" />
                   <q-btn color="warning" no-caps label="Mantener en revisión" :loading="savingStatus" @click="updateStatus('pending')" />
                   <q-btn flat no-caps color="secondary" label="Devolver a borrador" :loading="savingStatus" @click="updateStatus('draft')" />
                 </div>

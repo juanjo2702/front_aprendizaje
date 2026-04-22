@@ -1,46 +1,214 @@
 <template>
-  <q-page class="student-page">
-    <section class="inventory-hero">
-      <q-card flat bordered class="hero-panel">
-        <div class="text-overline text-secondary">Inventario del estudiante</div>
-        <div class="text-h4 text-weight-bold q-mt-sm">{{ auth.user?.name }}</div>
+  <q-page class="student-page" data-cy="student-inventory-page">
+    <section class="locker-grid">
+      <q-card flat bordered class="locker-card locker-card--hero">
+        <div class="text-overline text-secondary">My Locker</div>
+        <div class="text-h4 text-weight-bold q-mt-sm">Cosméticos, títulos y cupones en un solo lugar</div>
         <div class="text-caption text-grey-5 q-mt-sm">
-          Perfil, medallas desbloqueadas y progreso de coleccion.
+          Equipa tu estilo visual y usa tus cupones en el checkout cuando compres un curso.
         </div>
-        <div class="row q-gutter-sm q-mt-md">
+
+        <div class="locker-badges">
           <q-chip outline color="secondary">Nivel {{ gamificationSummary.level }}</q-chip>
           <q-chip outline color="warning" text-color="warning">Monedas {{ gamificationSummary.coins }}</q-chip>
           <q-chip flat color="dark">{{ gamificationSummary.levelTitle }}</q-chip>
         </div>
       </q-card>
-    </section>
 
-    <section class="inventory-grid">
-      <q-card flat bordered class="inventory-card">
+      <q-card flat bordered class="locker-card profile-preview">
         <div class="section-head">
           <div>
-            <div class="text-h6 text-weight-bold">Cosméticos y títulos</div>
-            <div class="text-caption text-grey-5">Recompensas activas compradas con monedas.</div>
+            <div class="text-h6 text-weight-bold">Mini-perfil público</div>
+            <div class="text-caption text-grey-5">Así te verán en comentarios y ranking.</div>
+          </div>
+          <q-btn flat round dense icon="edit" color="secondary" :to="{ name: 'student-profile' }" />
+        </div>
+
+        <div class="profile-preview__body">
+          <AvatarConMarco
+            :src="auth.user?.avatar"
+            :name="auth.user?.name"
+            :size="96"
+            :frame-class="previewFrame?.frame_class"
+            :frame-svg="previewFrame?.frame_svg"
+          />
+          <div>
+            <div class="text-h6 text-weight-bold">{{ auth.user?.name }}</div>
+            <q-badge v-if="previewTitle?.label" color="dark" text-color="warning" class="q-mt-xs">
+              {{ previewTitle.label }}
+            </q-badge>
+            <div class="text-caption text-grey-5 q-mt-sm">
+              Nivel {{ gamificationSummary.level }} · Racha {{ gamificationSummary.streak || 0 }} días
+            </div>
           </div>
         </div>
 
-        <div class="reward-grid">
-          <q-card v-for="purchase in inventory.purchasedCosmetics" :key="purchase.id" flat bordered class="reward-card">
-            <q-icon name="style" size="38px" color="secondary" />
-            <div class="text-weight-bold q-mt-md">{{ purchase.shopItem?.name }}</div>
-            <div class="text-caption text-grey-5">{{ purchase.metadata?.frame_style || 'Cosmético visual activo' }}</div>
-          </q-card>
+        <q-banner rounded class="bg-dark text-grey-4 q-mt-md">
+          La previsualización cambia al seleccionar un cosmético del vestidor. El cambio real se confirma con
+          <strong>Equipar</strong> o <strong>Quitar</strong>.
+        </q-banner>
+      </q-card>
+    </section>
 
-          <q-card v-for="purchase in inventory.ownedTitles" :key="purchase.id" flat bordered class="reward-card">
-            <q-icon name="workspace_premium" size="38px" color="warning" />
-            <div class="text-weight-bold q-mt-md">{{ purchase.metadata?.title || purchase.shopItem?.name }}</div>
-            <div class="text-caption text-grey-5">Visible en perfil y comentarios.</div>
-          </q-card>
+    <section class="inventory-layout">
+      <q-card flat bordered class="inventory-card">
+        <div class="section-head">
+          <div>
+            <div class="text-h6 text-weight-bold">Vestidor de marcos</div>
+            <div class="text-caption text-grey-5">Solo puedes tener un marco activo a la vez.</div>
+          </div>
+        </div>
 
-          <q-card v-if="!inventory.purchasedCosmetics.length && !inventory.ownedTitles.length" flat bordered class="reward-card empty-card">
-            <q-icon name="redeem" size="42px" color="grey-6" />
-            <div class="text-weight-medium q-mt-md">Todavía no compraste recompensas</div>
-            <div class="text-caption text-grey-5 q-mt-xs">La Coin Shop ya está lista para desbloquear cosméticos y perks.</div>
+        <div v-if="inventoryLoading" class="row q-col-gutter-md">
+          <div v-for="n in 4" :key="`frame-skeleton-${n}`" class="col-12 col-md-6">
+            <q-skeleton dark type="rect" height="180px" />
+          </div>
+        </div>
+
+        <div v-else-if="!frames.length" class="empty-card">
+          <q-icon name="style" size="42px" color="grey-6" />
+          <div class="text-weight-medium q-mt-sm">Todavía no tienes marcos comprados</div>
+          <div class="text-caption text-grey-5">Visita la Coin Shop para desbloquear nuevos estilos de avatar.</div>
+        </div>
+
+        <div v-else class="locker-items-grid">
+          <q-card
+            v-for="item in frames"
+            :key="item.id"
+            flat
+            bordered
+            class="locker-item"
+            :data-cy="`inventory-frame-card-${item.id}`"
+            :class="{ 'locker-item--selected': selectedFrameId === item.id }"
+            @click="selectedFrameId = item.id"
+          >
+            <AvatarConMarco
+              :src="auth.user?.avatar"
+              :name="auth.user?.name"
+              :size="72"
+              :frame-class="item.frame?.frame_class"
+              :frame-svg="item.frame?.frame_svg"
+            />
+            <div class="text-weight-bold q-mt-md">{{ item.shop_item?.name }}</div>
+            <div class="text-caption text-grey-5 q-mt-xs">
+              {{ item.shop_item?.description || 'Marco cosmético para tu mini-perfil.' }}
+            </div>
+            <div class="row q-gutter-sm q-mt-md justify-center">
+              <q-badge v-if="item.is_equipped" color="positive">Equipado</q-badge>
+              <q-badge v-else outline color="secondary">Disponible</q-badge>
+            </div>
+            <div class="row q-gutter-sm q-mt-md justify-center">
+              <q-btn
+                color="primary"
+                no-caps
+                :data-cy="`inventory-frame-equip-btn-${item.id}`"
+                :loading="equipingItemId === item.id"
+                :label="item.is_equipped ? 'Quitar' : 'Equipar'"
+                @click.stop="toggleEquip(item)"
+              />
+            </div>
+          </q-card>
+        </div>
+      </q-card>
+
+      <q-card flat bordered class="inventory-card">
+        <div class="section-head">
+          <div>
+            <div class="text-h6 text-weight-bold">Títulos comprados</div>
+            <div class="text-caption text-grey-5">Un solo título visible por perfil para mantener la claridad.</div>
+          </div>
+        </div>
+
+        <div v-if="inventoryLoading" class="row q-col-gutter-md">
+          <div v-for="n in 4" :key="`title-skeleton-${n}`" class="col-12 col-md-6">
+            <q-skeleton dark type="rect" height="160px" />
+          </div>
+        </div>
+
+        <div v-else-if="!titles.length" class="empty-card">
+          <q-icon name="workspace_premium" size="42px" color="grey-6" />
+          <div class="text-weight-medium q-mt-sm">Aún no desbloqueaste títulos</div>
+          <div class="text-caption text-grey-5">Los títulos aparecen junto a tu nombre en comentarios y leaderboards.</div>
+        </div>
+
+        <div v-else class="title-grid">
+          <q-card
+            v-for="item in titles"
+            :key="item.id"
+            flat
+            bordered
+            class="title-card"
+            :data-cy="`inventory-title-card-${item.id}`"
+            :class="{ 'locker-item--selected': selectedTitleId === item.id }"
+            @click="selectedTitleId = item.id"
+          >
+            <q-badge color="dark" text-color="warning">{{ item.title?.label || item.shop_item?.name }}</q-badge>
+            <div class="text-caption text-grey-5 q-mt-md">
+              {{ item.shop_item?.description || 'Título cosmético visible en tu presencia social.' }}
+            </div>
+            <div class="row q-gutter-sm q-mt-md">
+              <q-badge v-if="item.is_equipped" color="positive">Activo</q-badge>
+              <q-badge v-else outline color="secondary">Disponible</q-badge>
+            </div>
+            <q-btn
+              class="q-mt-md"
+              color="primary"
+              no-caps
+              :data-cy="`inventory-title-equip-btn-${item.id}`"
+              :loading="equipingItemId === item.id"
+              :label="item.is_equipped ? 'Quitar' : 'Equipar'"
+              @click.stop="toggleEquip(item)"
+            />
+          </q-card>
+        </div>
+      </q-card>
+    </section>
+
+    <section class="inventory-layout">
+      <q-card flat bordered class="inventory-card">
+        <div class="section-head">
+          <div>
+            <div class="text-h6 text-weight-bold">Panel de cupones</div>
+            <div class="text-caption text-grey-5">Copia el código y úsalo en el checkout de cursos.</div>
+          </div>
+        </div>
+
+        <div v-if="inventoryLoading" class="row q-col-gutter-md">
+          <div v-for="n in 3" :key="`coupon-skeleton-${n}`" class="col-12">
+            <q-skeleton dark type="rect" height="94px" />
+          </div>
+        </div>
+
+        <div v-else-if="!coupons.length" class="empty-card">
+          <q-icon name="sell" size="42px" color="grey-6" />
+          <div class="text-weight-medium q-mt-sm">No tienes cupones activos</div>
+          <div class="text-caption text-grey-5">Los cupones que compres aparecerán aquí con su código listo para copiar.</div>
+        </div>
+
+        <div v-else class="coupon-list">
+          <q-card v-for="coupon in coupons" :key="coupon.id" flat bordered class="coupon-card" :data-cy="`inventory-coupon-card-${coupon.id}`">
+            <div>
+              <div class="text-weight-bold">{{ coupon.shop_item?.name || 'Cupón' }}</div>
+              <div class="text-caption text-grey-5 q-mt-xs">
+                {{ coupon.discount_percent }}% de descuento · {{ coupon.shop_item?.description }}
+              </div>
+              <div class="coupon-code q-mt-md">{{ coupon.code }}</div>
+            </div>
+
+            <div class="coupon-actions">
+              <q-badge v-if="coupon.is_used" color="negative">Ya utilizado</q-badge>
+              <q-badge v-else color="positive">Disponible</q-badge>
+              <q-btn
+                v-if="!coupon.is_used"
+                outline
+                color="secondary"
+                no-caps
+                :data-cy="`coupon-copy-btn-${coupon.id}`"
+                icon="content_copy"
+                label="Copiar código"
+                @click="copyCoupon(coupon.code)"
+              />
+            </div>
           </q-card>
         </div>
       </q-card>
@@ -49,7 +217,7 @@
         <div class="section-head">
           <div>
             <div class="text-h6 text-weight-bold">Vitrina de medallas</div>
-            <div class="text-caption text-grey-5">Tus logros activos y los que aun estan bloqueados.</div>
+            <div class="text-caption text-grey-5">Tus logros activos y los que aún están bloqueados.</div>
           </div>
         </div>
 
@@ -82,18 +250,86 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
 import { useStudentStore } from 'src/stores/student'
+import AvatarConMarco from 'src/components/shared/AvatarConMarco.vue'
 
+const $q = useQuasar()
 const auth = useAuthStore()
 const studentStore = useStudentStore()
 const { badgesUnlocked, badgesLocked, inventoryLoading, inventory, gamificationSummary } = storeToRefs(studentStore)
 
+const equipingItemId = ref(null)
+const selectedFrameId = ref(null)
+const selectedTitleId = ref(null)
+
+const frames = computed(() => inventory.value?.locker?.frames || [])
+const titles = computed(() => inventory.value?.locker?.titles || [])
+const coupons = computed(() => inventory.value?.locker?.coupons || [])
+
+const selectedFrame = computed(() => frames.value.find((item) => item.id === selectedFrameId.value) || null)
+const selectedTitle = computed(() => titles.value.find((item) => item.id === selectedTitleId.value) || null)
+
+const previewFrame = computed(() => selectedFrame.value?.frame || inventory.value?.equipped?.frame || auth.user?.equipped_avatar_frame || null)
+const previewTitle = computed(() => selectedTitle.value?.title || inventory.value?.equipped?.title || auth.user?.equipped_profile_title || null)
+
+watch(
+  frames,
+  (value) => {
+    const equipped = value.find((item) => item.is_equipped)
+    selectedFrameId.value = equipped?.id || value[0]?.id || null
+  },
+  { immediate: true },
+)
+
+watch(
+  titles,
+  (value) => {
+    const equipped = value.find((item) => item.is_equipped)
+    selectedTitleId.value = equipped?.id || value[0]?.id || null
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   studentStore.loadInventory()
 })
+
+async function toggleEquip(item) {
+  equipingItemId.value = item.id
+  try {
+    const response = await studentStore.equipInventoryItem(item.id, !item.is_equipped)
+    $q.notify({
+      type: 'positive',
+      message: response?.message || 'Inventario actualizado.',
+    })
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error?.response?.data?.message || 'No se pudo actualizar el vestidor.',
+    })
+  } finally {
+    equipingItemId.value = null
+  }
+}
+
+async function copyCoupon(code) {
+  try {
+    await navigator.clipboard.writeText(code)
+    $q.notify({
+      type: 'positive',
+      message: 'Código copiado al portapapeles.',
+    })
+  } catch {
+    $q.notify({
+      type: 'warning',
+      message: `No se pudo copiar automáticamente. Código: ${code}`,
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -104,17 +340,40 @@ onMounted(() => {
   gap: 22px;
 }
 
-.hero-panel,
+.locker-grid,
+.inventory-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.locker-card,
 .inventory-card,
-.badge-card {
+.badge-card,
+.locker-item,
+.title-card,
+.coupon-card {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-.hero-panel,
+.locker-card,
 .inventory-card {
   border-radius: 28px;
   padding: 22px;
+}
+
+.locker-card--hero {
+  background:
+    radial-gradient(circle at top left, rgba(94, 107, 255, 0.26), transparent 40%),
+    linear-gradient(160deg, rgba(11, 16, 39, 0.98), rgba(17, 22, 48, 0.96));
+}
+
+.locker-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .section-head {
@@ -125,35 +384,90 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
+.profile-preview__body {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.locker-items-grid,
+.title-grid,
 .badge-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
+.locker-items-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.title-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.locker-item,
+.title-card,
 .badge-card {
-  border-radius: 24px;
-  padding: 20px;
-  text-align: center;
-}
-
-.reward-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.reward-card {
   border-radius: 22px;
   padding: 20px;
+}
+
+.locker-item {
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.locker-item--selected {
+  box-shadow: 0 0 0 1px rgba(32, 213, 236, 0.32);
+}
+
+.coupon-list {
+  display: grid;
+  gap: 14px;
+}
+
+.coupon-card {
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.coupon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.coupon-code {
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #20d5ec;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .empty-card {
-  grid-column: 1 / -1;
+  min-height: 180px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+}
+
+.badge-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.badge-card {
+  text-align: center;
 }
 
 .badge-card.unlocked {
@@ -168,10 +482,30 @@ onMounted(() => {
   filter: grayscale(1);
 }
 
-@media (max-width: 1000px) {
-  .reward-grid,
+@media (max-width: 1100px) {
+  .locker-grid,
+  .inventory-layout,
+  .locker-items-grid,
+  .title-grid,
   .badge-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .student-page {
+    padding: 18px;
+  }
+
+  .profile-preview__body,
+  .coupon-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .coupon-actions {
+    width: 100%;
+    align-items: stretch;
   }
 }
 </style>

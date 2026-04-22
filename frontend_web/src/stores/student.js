@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from 'src/services/api'
+import { useAuthStore } from 'src/stores/auth'
 
 const QUEUE_STORAGE_KEY = 'student-progress-queue'
 
@@ -134,8 +135,17 @@ export const useStudentStore = defineStore('student', () => {
     },
   })
   const inventory = ref({
-    purchasedCosmetics: [],
-    ownedTitles: [],
+    equipped: {
+      frame: null,
+      title: null,
+    },
+    miniProfile: null,
+    locker: {
+      frames: [],
+      titles: [],
+      extras: [],
+      coupons: [],
+    },
   })
   const shop = ref({
     items: [],
@@ -147,6 +157,7 @@ export const useStudentStore = defineStore('student', () => {
   const currentCourse = ref(null)
   const currentCourseProgress = ref(null)
   const paymentIntent = ref(null)
+  const miniProfiles = ref({})
   const pendingProgressQueue = ref(safeJsonParse(localStorage.getItem(QUEUE_STORAGE_KEY), []))
 
   let flushPromise = null
@@ -196,13 +207,6 @@ export const useStudentStore = defineStore('student', () => {
       metadata: purchase.metadata || {},
       shopItem: purchase.shop_item || purchase.shopItem || null,
     }
-  }
-
-  function syncInventoryFromPurchases(purchases = []) {
-    inventory.value.purchasedCosmetics = purchases.filter((purchase) =>
-      ['avatar_frame', 'premium_content'].includes(purchase.shopItem?.type),
-    )
-    inventory.value.ownedTitles = purchases.filter((purchase) => purchase.shopItem?.type === 'profile_title')
   }
 
   async function primeWorkspace() {
@@ -281,19 +285,32 @@ export const useStudentStore = defineStore('student', () => {
   async function loadInventory() {
     inventoryLoading.value = true
     try {
-      const [myBadgesRes, availableBadgesRes, certificatesRes, purchasesRes] = await Promise.all([
+      const [myBadgesRes, availableBadgesRes, certificatesRes, inventoryRes, purchasesRes] = await Promise.all([
         api.get('/badges/my'),
         api.get('/badges/available'),
         api.get('/certificates', { params: { per_page: 50 } }),
+        api.get('/student/inventory'),
         api.get('/shop/purchases', { params: { per_page: 50 } }),
       ])
 
       badgesUnlocked.value = myBadgesRes.data?.badges || []
       badgesLocked.value = availableBadgesRes.data?.badges || []
       certificates.value = certificatesRes.data?.data || []
+      inventory.value = {
+        equipped: inventoryRes.data?.equipped || {
+          frame: null,
+          title: null,
+        },
+        miniProfile: inventoryRes.data?.mini_profile || null,
+        locker: {
+          frames: inventoryRes.data?.locker?.frames || [],
+          titles: inventoryRes.data?.locker?.titles || [],
+          extras: inventoryRes.data?.locker?.extras || [],
+          coupons: inventoryRes.data?.locker?.coupons || [],
+        },
+      }
       shop.value.purchases = (purchasesRes.data?.data || []).map(normalizePurchaseRecord)
-      mergeEconomy(purchasesRes.data?.economy)
-      syncInventoryFromPurchases(shop.value.purchases)
+      mergeEconomy(inventoryRes.data?.economy || purchasesRes.data?.economy)
     } finally {
       inventoryLoading.value = false
     }
@@ -362,10 +379,13 @@ export const useStudentStore = defineStore('student', () => {
     }
   }
 
-  async function createPaymentIntent(courseId) {
+  async function createPaymentIntent(courseId, couponCode = '') {
     paymentLoading.value = true
     try {
-      const { data } = await api.post('/payments/intent', { course_id: courseId })
+      const { data } = await api.post('/payments/intent', {
+        course_id: courseId,
+        coupon_code: couponCode || undefined,
+      })
       paymentIntent.value = data
       return data
     } finally {
@@ -399,15 +419,44 @@ export const useStudentStore = defineStore('student', () => {
     const { data } = await api.get('/shop/purchases', { params: { per_page: 50 } })
     shop.value.purchases = (data?.data || []).map(normalizePurchaseRecord)
     mergeEconomy(data?.economy)
-    syncInventoryFromPurchases(shop.value.purchases)
     return shop.value.purchases
   }
 
   async function purchaseShopItem(itemId) {
     const { data } = await api.post(`/shop/items/${itemId}/purchase`)
     mergeEconomy(data?.economy)
-    await Promise.all([loadShop(shop.value.filters), loadPurchases(), loadDashboard()])
+    await Promise.all([loadShop(shop.value.filters), loadPurchases(), loadDashboard(), loadInventory()])
     return data
+  }
+
+  async function equipInventoryItem(userItemId, equipped) {
+    const auth = useAuthStore()
+    const { data } = await api.post('/student/inventory/equip', {
+      user_item_id: userItemId,
+      equipped,
+    })
+
+    if (data?.auth_user && auth.token) {
+      auth.setSession(auth.token, data.auth_user)
+    }
+
+    await loadInventory()
+    return data
+  }
+
+  async function loadMiniProfile(userId, options = {}) {
+    const cacheKey = String(userId)
+    if (!options.force && miniProfiles.value[cacheKey]) {
+      return miniProfiles.value[cacheKey]
+    }
+
+    const { data } = await api.get(`/users/${userId}/mini-profile`)
+    miniProfiles.value = {
+      ...miniProfiles.value,
+      [cacheKey]: data?.profile || null,
+    }
+
+    return miniProfiles.value[cacheKey]
   }
 
   function clearPaymentIntent() {
@@ -552,6 +601,7 @@ export const useStudentStore = defineStore('student', () => {
     currentCourse,
     currentCourseProgress,
     paymentIntent,
+    miniProfiles,
     pendingProgressQueue,
     primeWorkspace,
     loadDashboard,
@@ -563,6 +613,8 @@ export const useStudentStore = defineStore('student', () => {
     loadShop,
     loadPurchases,
     purchaseShopItem,
+    equipInventoryItem,
+    loadMiniProfile,
     clearPaymentIntent,
     startPaymentStatusPolling,
     submitLessonCompletion,

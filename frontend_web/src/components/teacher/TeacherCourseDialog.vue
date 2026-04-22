@@ -1,6 +1,6 @@
 <template>
   <q-dialog :model-value="modelValue" persistent @update:model-value="emit('update:modelValue', $event)">
-    <q-card class="dialog-card">
+    <q-card class="dialog-card" data-cy="teacher-course-dialog">
       <q-card-section class="row items-center justify-between">
         <div class="text-h6">{{ course ? 'Editar curso' : 'Crear curso' }}</div>
         <q-btn flat round dense icon="close" @click="emit('update:modelValue', false)" />
@@ -9,21 +9,22 @@
         <div class="row q-col-gutter-lg">
           <div class="col-12 col-lg-6">
             <div class="row q-col-gutter-md">
-              <div class="col-12"><q-input v-model="form.title" label="Título" outlined dense /></div>
-              <div class="col-12"><q-input v-model="form.short_description" label="Resumen corto" outlined dense maxlength="300" counter /></div>
-              <div class="col-12"><q-input v-model="form.description" type="textarea" label="Descripción" outlined autogrow /></div>
-              <div class="col-12 col-md-4"><q-input v-model.number="form.price" label="Precio" type="number" outlined dense min="0" step="0.01" /></div>
-              <div class="col-12 col-md-4"><q-select v-model="form.category_id" :options="categoryOptions" emit-value map-options label="Categoría" outlined dense clearable /></div>
-              <div class="col-12 col-md-4"><q-select v-model="form.level" :options="levelOptions" emit-value map-options label="Nivel" outlined dense /></div>
-              <div class="col-12 col-md-4"><q-input v-model="form.language" label="Idioma" outlined dense maxlength="10" /></div>
-              <div class="col-12 col-md-4"><q-select v-model="form.status" :options="statusOptions" emit-value map-options label="Estado" outlined dense /></div>
-              <div class="col-12 col-md-4 flex flex-center"><q-toggle v-model="form.has_certificate" color="secondary" label="Emitir certificado" /></div>
+              <div class="col-12"><q-input v-model="form.title" data-cy="course-title-input" label="Título" outlined dense /></div>
+              <div class="col-12"><q-input v-model="form.short_description" data-cy="course-short-description-input" label="Resumen corto" outlined dense maxlength="300" counter /></div>
+              <div class="col-12"><q-input v-model="form.description" data-cy="course-description-input" type="textarea" label="Descripción" outlined autogrow /></div>
+              <div class="col-12 col-md-4"><q-input v-model.number="form.price" data-cy="course-price-input" label="Precio" type="number" outlined dense min="0" step="0.01" /></div>
+              <div class="col-12 col-md-4"><q-select v-model="form.category_id" data-cy="course-category-select" :options="categoryOptions" emit-value map-options label="Categoría" outlined dense clearable /></div>
+              <div class="col-12 col-md-4"><q-select v-model="form.level" data-cy="course-level-select" :options="levelOptions" emit-value map-options label="Nivel" outlined dense /></div>
+              <div class="col-12 col-md-4"><q-input v-model="form.language" data-cy="course-language-input" label="Idioma" outlined dense maxlength="10" /></div>
+              <div class="col-12 col-md-4"><q-select v-model="form.status" data-cy="course-status-select" :options="statusOptions" emit-value map-options label="Estado" outlined dense /></div>
+              <div class="col-12 col-md-4 flex flex-center"><q-toggle v-model="form.has_certificate" data-cy="course-has-certificate-toggle" color="secondary" label="Emitir certificado" /></div>
               <div class="col-12" v-if="form.has_certificate">
-                <q-input v-model.number="form.certificate_min_score" label="Puntaje mínimo" type="number" outlined dense min="0" max="100" />
+                <q-input v-model.number="form.certificate_min_score" data-cy="course-certificate-min-score-input" label="Puntaje mínimo" type="number" outlined dense min="0" max="100" />
               </div>
               <div class="col-12" v-if="form.has_certificate">
                 <q-toggle
                   v-model="form.certificate_requires_final_exam"
+                  data-cy="course-final-exam-toggle"
                   color="warning"
                   label="Requerir examen final dentro de la plataforma"
                 />
@@ -47,11 +48,11 @@
         </div>
       </q-card-section>
       <q-card-actions align="between" class="q-px-md q-pb-md">
-        <q-btn flat no-caps color="secondary" icon="auto_fix_high" label="Cargar ejemplo" @click="fillDemoTemplate" />
-        <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-5" label="Cancelar" @click="emit('update:modelValue', false)" />
-          <q-btn color="primary" no-caps :loading="saving" :label="course ? 'Guardar cambios' : 'Crear curso'" @click="submit" />
-        </div>
+          <q-btn flat no-caps color="secondary" icon="auto_fix_high" data-cy="course-load-template-btn" label="Cargar ejemplo" @click="fillDemoTemplate" />
+          <div class="row q-gutter-sm">
+            <q-btn flat no-caps color="grey-5" label="Cancelar" @click="emit('update:modelValue', false)" />
+            <q-btn color="primary" no-caps data-cy="course-save-btn" :loading="saving" :label="course ? 'Guardar cambios' : 'Crear curso'" @click="submit" />
+          </div>
       </q-card-actions>
     </q-card>
   </q-dialog>
