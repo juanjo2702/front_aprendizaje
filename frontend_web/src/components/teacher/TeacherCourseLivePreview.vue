@@ -1,6 +1,13 @@
 <template>
   <div class="column q-gutter-md">
     <q-card class="preview-card q-pa-lg">
+      <div class="cover-preview q-mb-md">
+        <img v-if="form.thumbnail" :src="form.thumbnail" alt="Portada del curso" />
+        <div v-else class="cover-empty">
+          <q-icon name="image" size="42px" />
+          <span>Portada pendiente</span>
+        </div>
+      </div>
       <q-badge color="secondary" outline class="q-mb-md">Vista previa en vivo</q-badge>
       <div class="text-caption text-grey-5 q-mb-sm">
         {{ categoryLabel }} · {{ levelLabel }} · {{ languageLabel }}
@@ -16,12 +23,12 @@
         <div class="col-auto">
           <q-badge :color="statusColor">{{ statusLabel }}</q-badge>
         </div>
-        <div class="col-auto" v-if="form.has_certificate">
+        <div v-if="form.has_certificate" class="col-auto">
           <q-badge color="secondary" outline>
             Certificado desde {{ normalizedScore }}%
           </q-badge>
         </div>
-        <div class="col-auto" v-if="form.has_certificate && form.certificate_requires_final_exam">
+        <div v-if="form.has_certificate && form.certificate_requires_final_exam" class="col-auto">
           <q-badge color="warning" outline>
             Requiere examen final
           </q-badge>
@@ -130,5 +137,25 @@ function serializeList(text = '') {
   background: linear-gradient(160deg, rgba(26, 26, 62, 0.92), rgba(20, 20, 45, 0.92));
   border: 1px solid rgba(108, 92, 231, 0.28);
   border-radius: 18px;
+}
+
+.cover-preview {
+  height: 190px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #9aa1d3;
 }
 </style>

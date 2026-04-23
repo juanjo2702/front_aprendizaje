@@ -23,6 +23,7 @@
         <template #body-cell-actions="props">
           <q-td :props="props">
             <div class="row q-gutter-sm">
+              <q-btn flat color="secondary" no-caps icon="visibility" :data-cy="`certificate-preview-btn-${props.row.id}`" label="Vista previa" @click="previewCertificate(props.row)" />
               <q-btn flat color="primary" no-caps icon="download" :data-cy="`certificate-download-btn-${props.row.id}`" label="Descargar" @click="downloadCertificate(props.row)" />
               <q-btn flat color="secondary" no-caps icon="content_copy" label="Copiar enlace" @click="copyValidationLink(props.row)" />
             </div>
@@ -35,12 +36,14 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { copyToClipboard, useQuasar } from 'quasar'
 import { storeToRefs } from 'pinia'
-import { api } from 'src/services/api'
 import { useStudentStore } from 'src/stores/student'
+import { api } from 'src/services/api'
 
 const $q = useQuasar()
+const router = useRouter()
 const studentStore = useStudentStore()
 const { certificates, inventoryLoading } = storeToRefs(studentStore)
 
@@ -60,12 +63,34 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function previewCertificate(certificate) {
+  router.push({ name: 'student-certificate-detail', params: { id: certificate.id } })
+}
+
 async function downloadCertificate(certificate) {
   try {
-    const { data } = await api.get(`/certificates/${certificate.id}/download`)
-    $q.notify({ type: 'positive', message: data?.message || 'Descarga preparada.' })
+    const { data } = await api.get(`/certificates/${certificate.id}/download`, {
+      responseType: 'blob',
+    })
+
+    const fileUrl = window.URL.createObjectURL(
+      new Blob([data], { type: 'application/pdf' })
+    )
+    const link = document.createElement('a')
+    link.href = fileUrl
+    link.download = `certificado-${certificate.certificate_code}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(fileUrl)
+
+    $q.notify({ type: 'positive', message: 'Certificado descargado correctamente.' })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error?.response?.data?.message || 'No se pudo preparar la descarga.' })
+    console.error('Error descargando certificado:', error)
+    $q.notify({
+      type: 'negative',
+      message: error?.response?.data?.message || 'No pudimos descargar el certificado.',
+    })
   }
 }
 

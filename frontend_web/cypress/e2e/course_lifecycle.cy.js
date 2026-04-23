@@ -14,6 +14,58 @@ const teacherCourse = {
   active_students: 0,
 }
 
+function setNativeFieldValue(input, value) {
+  const prototype = Object.getPrototypeOf(input)
+  const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+
+  if (valueSetter) {
+    valueSetter.call(input, value)
+  } else {
+    input.value = value
+  }
+
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+function typeIntoField(selector, value, options = {}) {
+  const { clear = false } = options
+
+  cy.get(selector).then(($el) => {
+    const isNativeField = $el.is('input, textarea')
+    const target = isNativeField
+      ? cy.wrap($el)
+      : cy.wrap($el).find('input, textarea').first()
+
+    target.then(($input) => {
+      const input = $input.get(0)
+      const inputType = input?.getAttribute('type')
+
+      cy.wrap($input).click({ force: true })
+
+      if (clear || inputType === 'number') {
+        setNativeFieldValue(input, '')
+      }
+
+      if (inputType === 'number') {
+        setNativeFieldValue(input, String(value))
+        cy.wrap($input).blur({ force: true })
+        return
+      }
+
+      cy.wrap($input).type(String(value), { force: true })
+    })
+  })
+}
+
+function selectQuasarOption(triggerSelector, optionLabel) {
+  cy.get(triggerSelector).click()
+  cy.get('.q-menu:visible, .q-dialog__inner:visible')
+    .last()
+    .contains('.q-item, [role="option"]', optionLabel)
+    .click({ force: true })
+}
+
 describe('Ciclo de vida del curso', () => {
   it('permite al docente crear estructura y enviar el curso a pending', () => {
     let createdCourseId = teacherCourse.id
@@ -50,10 +102,10 @@ describe('Ciclo de vida del curso', () => {
 
     cy.get('[data-cy="create-course-btn"]').click()
     cy.get('[data-cy="teacher-course-dialog"]').should('be.visible')
-    cy.get('[data-cy="course-title-input"]').find('input').type('Curso Cypress QA')
-    cy.get('[data-cy="course-short-description-input"]').find('input').type('Curso generado desde QA')
-    cy.get('[data-cy="course-description-input"]').find('textarea').type('Validación del flujo Course > Module > Lesson.')
-    cy.get('[data-cy="course-price-input"]').find('input').clear().type('49')
+    typeIntoField('[data-cy="course-title-input"]', 'Curso Cypress QA')
+    typeIntoField('[data-cy="course-short-description-input"]', 'Curso generado desde QA')
+    typeIntoField('[data-cy="course-description-input"]', 'Validación del flujo Course > Module > Lesson.')
+    typeIntoField('[data-cy="course-price-input"]', '49', { clear: true })
     cy.get('[data-cy="course-save-btn"]').click()
     cy.wait('@createCourse')
 
@@ -109,7 +161,7 @@ describe('Ciclo de vida del curso', () => {
 
     cy.get('[data-cy="new-module-btn"]').click()
     cy.get('[data-cy="module-dialog"]').should('be.visible')
-    cy.get('[data-cy="module-title-input"]').find('input').type('Módulo QA')
+    typeIntoField('[data-cy="module-title-input"]', 'Módulo QA')
     cy.get('[data-cy="save-module-btn"]').click()
     cy.wait('@createModule')
     cy.wait('@getStructureWithModule')
@@ -159,7 +211,8 @@ describe('Ciclo de vida del curso', () => {
 
     cy.get(`[data-cy="add-lesson-btn-${createdModuleId}"]`).click()
     cy.get('[data-cy="lesson-dialog"]').should('be.visible')
-    cy.get('[data-cy="lesson-title-input"]').find('input').type('Lección video')
+    typeIntoField('[data-cy="lesson-title-input"]', 'Lección video')
+    selectQuasarOption('[data-cy="lesson-source-mode-select"]', 'Archivo local')
     cy.uploadChunkedFile({
       fileName: 'curso-cypress.mp4',
       uploadToken: 'video-token-cypress',
@@ -207,14 +260,12 @@ describe('Ciclo de vida del curso', () => {
     }).as('getStructureWithActivityLesson')
 
     cy.get(`[data-cy="add-lesson-btn-${createdModuleId}"]`).click()
-    cy.get('[data-cy="lesson-title-input"]').find('input').type('Lección actividad')
-    cy.get('[data-cy="lesson-type-select"]').click()
-    cy.contains('.q-item', 'Actividad').click()
-    cy.get('[data-cy="activity-type-select"]').click()
-    cy.contains('.q-item', 'Trivia').click()
+    typeIntoField('[data-cy="lesson-title-input"]', 'Lección actividad')
+    selectQuasarOption('[data-cy="lesson-type-select"]', 'Actividad')
+    selectQuasarOption('[data-cy="activity-type-select"]', 'Trivia')
     cy.get('[data-cy="load-activity-template-btn"]').click()
-    cy.get('[data-cy="activity-max-attempts-input"]').find('input').clear().type('3')
-    cy.get('[data-cy="activity-passing-score-input"]').find('input').clear().type('80')
+    typeIntoField('[data-cy="activity-max-attempts-input"]', '3', { clear: true })
+    typeIntoField('[data-cy="activity-passing-score-input"]', '80', { clear: true })
     cy.get('[data-cy="save-lesson-btn"]').click()
     cy.wait('@createActivityLesson')
     cy.wait('@getStructureWithActivityLesson')

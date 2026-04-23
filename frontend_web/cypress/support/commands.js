@@ -1,6 +1,4 @@
 /* global Cypress, cy, expect */
-const API_URL = Cypress.env('apiUrl') || 'http://localhost:8000/api'
-
 const demoUsers = {
   student: {
     id: 201,
@@ -38,7 +36,7 @@ Cypress.Commands.add('login', (role = 'student') => {
   cy.session(
     `role:${normalizedRole}`,
     () => {
-      cy.intercept('POST', `${API_URL}/login`, {
+      cy.intercept('POST', '**/api/login', {
         statusCode: 200,
         body: {
           token: `fake-token-${normalizedRole}`,
@@ -46,7 +44,7 @@ Cypress.Commands.add('login', (role = 'student') => {
         },
       }).as(`login${normalizedRole}`)
 
-      cy.intercept('GET', `${API_URL}/profile`, {
+      cy.intercept('GET', '**/api/profile*', {
         statusCode: 200,
         body: user,
       }).as(`profile${normalizedRole}`)
@@ -68,21 +66,97 @@ Cypress.Commands.add('login', (role = 'student') => {
     },
   )
 
+  cy.intercept('GET', '**/api/user/dashboard-stats*', {
+    statusCode: 200,
+    body: {
+      stats: {
+        current_level: 5,
+        total_points: 1250,
+        available_coins: 330,
+        earned_coins: 400,
+        spent_coins: 70,
+        current_streak: 4,
+        level_title: 'Veterano',
+      },
+      courses: { recent: [] },
+      activities: { recent_purchases: [] },
+    },
+  })
+
+  cy.intercept('GET', '**/api/user/recent-activity*', {
+    statusCode: 200,
+    body: { activities: [] },
+  })
+
+  cy.intercept('GET', '**/api/badges/my*', {
+    statusCode: 200,
+    body: { badges: [] },
+  })
+
+  cy.intercept('GET', '**/api/badges/available*', {
+    statusCode: 200,
+    body: { badges: [] },
+  })
+
+  cy.intercept('GET', '**/api/certificates*', {
+    statusCode: 200,
+    body: { data: [] },
+  })
+
+  cy.intercept('GET', '**/api/student/inventory*', {
+    statusCode: 200,
+    body: {
+      equipped: { frame: null, title: null },
+      mini_profile: null,
+      locker: { frames: [], titles: [], extras: [], coupons: [] },
+    },
+  })
+
+  cy.intercept('GET', '**/api/shop/purchases*', {
+    statusCode: 200,
+    body: { data: [], economy: { available_coins: 330 } },
+  })
+
+  cy.intercept('GET', '**/api/shop/items*', {
+    statusCode: 200,
+    body: {
+      items: [],
+      economy: {
+        level: 5,
+        total_xp: 1250,
+        available_coins: 330,
+        earned_coins: 400,
+        spent_coins: 70,
+        level_title: 'Veterano',
+      },
+    },
+  })
+
+  cy.intercept('GET', '**/api/user/courses*', {
+    statusCode: 200,
+    body: { data: [] },
+  })
 })
 
 Cypress.Commands.add('simulateVideoEnd', (selector = '[data-cy="student-video-element"]') => {
   cy.get(selector)
     .should('exist')
-    .then(($video) => {
-      const video = $video.get(0)
-      video.dispatchEvent(new Event('ended', { bubbles: true }))
+    .then(() => {
+      cy.window().then((win) => {
+        if (typeof win.__qaCompleteCurrentVideo === 'function') {
+          win.__qaCompleteCurrentVideo()
+          return
+        }
+
+        win.dispatchEvent(new CustomEvent('qa:video-ended'))
+      })
     })
 })
 
 Cypress.Commands.add('uploadChunkedFile', (options = {}) => {
   const {
     endpoint = '**/api/teacher/upload-video',
-    selector = '[data-cy="chunked-uploader-input"] input[type=file]',
+    selector = '[data-cy="chunked-uploader-input"] input[type=file], [data-cy="chunked-uploader"] input[type=file], .q-uploader input[type=file]',
     fileName = 'video-demo.mp4',
     fileType = 'video/mp4',
     chunkCount = 3,
@@ -114,10 +188,8 @@ Cypress.Commands.add('uploadChunkedFile', (options = {}) => {
     const content = new Uint8Array(10 * 1024 * 1024 * totalChunks).fill(7)
     const blob = new win.Blob([content], { type: fileType })
     const testFile = new win.File([blob], fileName, { type: fileType })
-    const dataTransfer = new win.DataTransfer()
-    dataTransfer.items.add(testFile)
 
-    cy.get(selector).selectFile(
+    cy.get(selector, { timeout: 10000 }).first().selectFile(
       {
         contents: testFile,
         fileName,
@@ -125,78 +197,9 @@ Cypress.Commands.add('uploadChunkedFile', (options = {}) => {
         lastModified: Date.now(),
       },
       { force: true },
-  )
-
-  cy.intercept('GET', `${API_URL}/user/dashboard-stats`, {
-    statusCode: 200,
-    body: {
-      stats: {
-        current_level: 5,
-        total_points: 1250,
-        available_coins: 330,
-        earned_coins: 400,
-        spent_coins: 70,
-        current_streak: 4,
-        level_title: 'Veterano',
-      },
-      courses: { recent: [] },
-      activities: { recent_purchases: [] },
-    },
+    )
   })
-  cy.intercept('GET', `${API_URL}/user/recent-activity*`, {
-    statusCode: 200,
-    body: { activities: [] },
-  })
-  cy.intercept('GET', `${API_URL}/badges/my`, {
-    statusCode: 200,
-    body: { badges: [] },
-  })
-  cy.intercept('GET', `${API_URL}/badges/available`, {
-    statusCode: 200,
-    body: { badges: [] },
-  })
-  cy.intercept('GET', `${API_URL}/certificates*`, {
-    statusCode: 200,
-    body: { data: [] },
-  })
-  cy.intercept('GET', `${API_URL}/student/inventory`, {
-    statusCode: 200,
-    body: {
-      equipped: { frame: null, title: null },
-      mini_profile: null,
-      locker: { frames: [], titles: [], extras: [], coupons: [] },
-    },
-  })
-  cy.intercept('GET', `${API_URL}/shop/purchases*`, {
-    statusCode: 200,
-    body: { data: [], economy: { available_coins: 330 } },
-  })
-  cy.intercept('GET', `${API_URL}/shop/items*`, {
-    statusCode: 200,
-    body: {
-      items: [],
-      economy: {
-        level: 5,
-        total_xp: 1250,
-        available_coins: 330,
-        earned_coins: 400,
-        spent_coins: 70,
-        level_title: 'Veterano',
-      },
-    },
-  })
-  cy.intercept('GET', `${API_URL}/user/courses*`, {
-    statusCode: 200,
-    body: { data: [] },
-  })
-})
 
   cy.get('[data-cy="chunked-upload-submit-btn"]').click()
   cy.wait('@chunkUpload')
 })
-
-declareGlobalCommandTypes()
-
-function declareGlobalCommandTypes() {
-  // Hook vacío para mantener el archivo autoexplicativo en JS puro.
-}

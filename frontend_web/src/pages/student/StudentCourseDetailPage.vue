@@ -97,14 +97,14 @@
             <div v-if="currentCourseProgress" class="progress-box">
               <div class="row items-center justify-between">
                 <span>Avance actual</span>
-                <strong>{{ currentCourseProgress.overall_progress?.percentage || 0 }}%</strong>
+                <strong>{{ courseProgressPercent }}%</strong>
               </div>
               <q-linear-progress
                 class="q-mt-sm"
                 rounded
                 size="10px"
                 color="secondary"
-                :value="(currentCourseProgress.overall_progress?.percentage || 0) / 100"
+                :value="courseProgressPercent / 100"
               />
             </div>
 
@@ -199,6 +199,14 @@
           <q-btn flat round dense icon="close" @click="closeCheckout" />
         </q-card-section>
         <q-card-section class="column q-gutter-md">
+          <q-banner rounded class="bg-dark text-grey-3">
+            <div class="text-weight-medium">Resumen de la compra</div>
+            <div class="q-mt-xs">{{ currentCourse.title }}</div>
+            <div class="text-caption text-grey-5 q-mt-xs">
+              Precio base: {{ formatPrice(currentCourse.price) }}
+            </div>
+          </q-banner>
+
           <q-input
             v-model="couponCode"
             data-cy="apply-coupon-input"
@@ -206,7 +214,7 @@
             dark
             dense
             label="Aplicar cupón"
-            hint="Solo se aceptan cupones comprados por tu cuenta."
+            hint="Opcional. Solo se aceptan cupones comprados por tu cuenta."
           >
             <template #append>
               <q-btn
@@ -215,12 +223,55 @@
                 no-caps
                 color="secondary"
                 data-cy="generate-qr-btn"
-                label="Generar QR"
+                label="Aplicar y generar QR"
                 :loading="paymentLoading"
                 @click="startCheckout"
               />
             </template>
           </q-input>
+
+          <q-select
+            v-if="availableCoupons.length"
+            v-model="couponCode"
+            data-cy="available-coupons-select"
+            outlined
+            dark
+            dense
+            emit-value
+            map-options
+            clearable
+            label="Mis cupones disponibles"
+            :options="availableCouponOptions"
+            hint="Selecciona uno de tus cupones comprados o escribe el código manualmente arriba."
+          />
+
+          <q-banner v-else rounded class="bg-dark text-grey-4">
+            <div class="text-weight-medium">No tienes cupones disponibles</div>
+            <div class="q-mt-xs">
+              Puedes continuar la compra sin cupón o ir a la Tienda de monedas para desbloquear uno.
+            </div>
+            <div class="row q-gutter-sm q-mt-sm">
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="secondary"
+                icon="qr_code_2"
+                label="Continuar sin cupón"
+                @click="startCheckout"
+              />
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="secondary"
+                icon="storefront"
+                label="Ir a Coin Shop"
+                :to="{ name: 'student-shop' }"
+                @click="closeCheckout"
+              />
+            </div>
+          </q-banner>
 
           <q-banner v-if="checkoutError" rounded class="bg-negative text-white">
             {{ checkoutError }}
@@ -266,6 +317,18 @@
           <q-banner v-else-if="paymentIntent?.status === 'completed'" rounded class="bg-positive text-white">
             Compra confirmada. El curso quedó desbloqueado con el cupón aplicado.
           </q-banner>
+
+          <div v-if="!paymentIntent" class="row justify-end q-gutter-sm">
+            <q-btn flat no-caps label="Cancelar" @click="closeCheckout" />
+            <q-btn
+              color="primary"
+              no-caps
+              icon="qr_code_2"
+              label="Generar QR sin cupón"
+              :loading="paymentLoading"
+              @click="startCheckout"
+            />
+          </div>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -285,7 +348,7 @@ const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 const studentStore = useStudentStore()
-const { currentCourse, currentCourseLoading, currentCourseProgress, paymentIntent, paymentLoading } = storeToRefs(studentStore)
+const { currentCourse, currentCourseLoading, currentCourseProgress, paymentIntent, paymentLoading, inventory } = storeToRefs(studentStore)
 
 const checkoutDialog = ref(false)
 const paymentCompleted = ref(false)
@@ -293,6 +356,20 @@ const simulatingPayment = ref(false)
 const couponCode = ref('')
 const checkoutError = ref('')
 const showSimulateButton = computed(() => import.meta.env.DEV || window.location.hostname === 'localhost')
+const availableCoupons = computed(() =>
+  (inventory.value?.locker?.coupons || []).filter((coupon) => !coupon.is_used),
+)
+const availableCouponOptions = computed(() =>
+  availableCoupons.value.map((coupon) => ({
+    label: `${coupon.code} · ${Number(coupon.discount_percent || 0)}% · ${coupon.shop_item?.name || 'Cupón'}`,
+    value: coupon.code,
+  })),
+)
+const courseProgressPercent = computed(() => {
+  const raw = currentCourseProgress.value?.overall_progress
+  if (typeof raw === 'number') return raw
+  return Number(raw?.percentage || 0)
+})
 
 const learningItems = computed(() => {
   const items = currentCourse.value?.what_you_learn || []
@@ -359,6 +436,7 @@ async function openCheckout() {
   checkoutError.value = ''
   couponCode.value = ''
   studentStore.clearPaymentIntent()
+  await studentStore.loadInventory()
   checkoutDialog.value = true
 }
 

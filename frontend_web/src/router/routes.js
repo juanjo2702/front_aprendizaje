@@ -7,6 +7,12 @@ const routes = [
       { path: '', name: 'home', component: () => import('pages/public/HomePage.vue') },
       { path: 'catalog', name: 'public-catalog', component: () => import('pages/public/CatalogPage.vue') },
       {
+        path: 'certificates/verify/:certificateCode',
+        name: 'public-certificate-verify',
+        component: () => import('pages/public/CertificateVerificationPage.vue'),
+        props: true,
+      },
+      {
         path: 'courses/:slug',
         name: 'public-course-detail',
         component: () => import('pages/public/CourseDetailPage.vue'),
@@ -143,6 +149,20 @@ const routes = [
           studentCrumbs: [
             { label: 'Dashboard', to: { name: 'student-dashboard' } },
             { label: 'Certificados' },
+          ],
+        },
+      },
+      {
+        path: 'certificates/:id',
+        name: 'student-certificate-detail',
+        component: () => import('pages/certificates/CertificateDetailPage.vue'),
+        props: true,
+        meta: {
+          studentTitle: 'Detalle del certificado',
+          studentCrumbs: [
+            { label: 'Dashboard', to: { name: 'student-dashboard' } },
+            { label: 'Certificados', to: { name: 'student-certificates-vault' } },
+            { label: 'Detalle' },
           ],
         },
       },
@@ -454,6 +474,8 @@ const routes = [
   { path: '/student/rewards', redirect: { name: 'student-shop' } },
   { path: '/student/courses', redirect: { name: 'student-my-learning' } },
   { path: '/student/arena/:lessonId', redirect: (to) => `/student/learn/${to.params.lessonId}` },
+  { path: '/certificates', redirect: { name: 'student-certificates-vault' } },
+  { path: '/certificates/:id', redirect: (to) => `/student/certificates/${to.params.id}` },
   { path: '/instructor/courses', redirect: { name: 'teacher-courses' } },
   { path: '/admin', redirect: { name: 'admin-dashboard' } },
   { path: '/admin/payments', redirect: { name: 'admin-finances' } },

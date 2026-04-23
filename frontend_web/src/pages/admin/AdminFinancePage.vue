@@ -1,5 +1,5 @@
 <template>
-  <q-page class="admin-page workspace-page">
+  <q-page class="admin-page workspace-page" data-cy="admin-finance-page">
     <div class="page-wrap workspace-wrap">
       <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
         <div class="col-12 col-lg">
@@ -97,6 +97,7 @@
                         round
                         color="positive"
                         icon="check_circle"
+                        :data-cy="`payment-confirm-btn-${props.row.id}`"
                         :disable="props.row.status !== 'pending'"
                         @click="openPaymentDialog(props.row, 'confirm')"
                       />
@@ -105,6 +106,7 @@
                         round
                         color="negative"
                         icon="cancel"
+                        :data-cy="`payment-reject-btn-${props.row.id}`"
                         :disable="props.row.status !== 'pending'"
                         @click="openPaymentDialog(props.row, 'reject')"
                       />
@@ -168,9 +170,9 @@
                 <template #body-cell-actions="props">
                   <q-td :props="props">
                     <div class="row justify-end q-gutter-xs">
-                      <q-btn flat round color="positive" icon="task_alt" @click="openPayoutDialog(props.row, 'approved')" />
-                      <q-btn flat round color="info" icon="paid" @click="openPayoutDialog(props.row, 'paid')" />
-                      <q-btn flat round color="negative" icon="do_not_disturb" @click="openPayoutDialog(props.row, 'rejected')" />
+                      <q-btn flat round color="positive" icon="task_alt" :data-cy="`payout-approve-btn-${props.row.id}`" @click="openPayoutDialog(props.row, 'approved')" />
+                      <q-btn flat round color="info" icon="paid" :data-cy="`payout-paid-btn-${props.row.id}`" @click="openPayoutDialog(props.row, 'paid')" />
+                      <q-btn flat round color="negative" icon="do_not_disturb" :data-cy="`payout-reject-btn-${props.row.id}`" @click="openPayoutDialog(props.row, 'rejected')" />
                     </div>
                   </q-td>
                 </template>
@@ -196,6 +198,7 @@
                   min="0"
                   max="100"
                   label="Comisión plataforma (%)"
+                  data-cy="platform-commission-input"
                   hint="Ejemplo: 20 significa que la plataforma retiene el 20% de cada pago confirmado."
                 />
               </div>
@@ -205,6 +208,7 @@
                   outlined
                   dense
                   label="Moneda"
+                  data-cy="platform-currency-input"
                   hint="Usa BOB para la demo de Bolivia y conciliación QR."
                 />
               </div>
@@ -216,20 +220,21 @@
                   dense
                   min="0"
                   label="Monto mínimo de retiro"
+                  data-cy="minimum-payout-input"
                   hint="Evita solicitudes muy pequeñas y simplifica la operación administrativa."
                 />
               </div>
             </div>
 
             <div class="row justify-end q-mt-lg">
-              <q-btn color="primary" no-caps label="Guardar configuración" :loading="settingsSaving" @click="saveSettings" />
+              <q-btn color="primary" no-caps data-cy="save-platform-settings-btn" label="Guardar configuración" :loading="settingsSaving" @click="saveSettings" />
             </div>
           </q-card>
         </q-tab-panel>
       </q-tab-panels>
 
       <q-dialog v-model="paymentDialog.open" persistent>
-        <q-card style="width: min(560px, 92vw)">
+        <q-card style="width: min(560px, 92vw)" data-cy="payment-review-dialog">
           <q-card-section>
             <div class="text-h6">
               {{ paymentDialog.mode === 'confirm' ? 'Confirmar pago' : 'Rechazar pago' }}
@@ -239,7 +244,7 @@
             </div>
           </q-card-section>
           <q-card-section class="column q-gutter-md">
-            <q-input v-model="paymentDialog.notes" type="textarea" outlined autogrow label="Notas de revisión" />
+            <q-input v-model="paymentDialog.notes" data-cy="payment-review-notes-input" type="textarea" outlined autogrow label="Notas de revisión" />
             <q-file
               v-if="paymentDialog.mode === 'confirm'"
               v-model="paymentDialog.receiptFile"
@@ -254,6 +259,7 @@
               :color="paymentDialog.mode === 'confirm' ? 'positive' : 'negative'"
               no-caps
               :label="paymentDialog.mode === 'confirm' ? 'Confirmar recepción' : 'Rechazar pago'"
+              data-cy="submit-payment-review-btn"
               :loading="paymentSaving"
               @click="submitPaymentReview"
             />
@@ -262,7 +268,7 @@
       </q-dialog>
 
       <q-dialog v-model="payoutDialog.open" persistent>
-        <q-card style="width: min(520px, 92vw)">
+        <q-card style="width: min(520px, 92vw)" data-cy="payout-review-dialog">
           <q-card-section>
             <div class="text-h6">Actualizar retiro</div>
             <div class="text-caption text-grey-7 q-mt-xs">
@@ -270,11 +276,11 @@
             </div>
           </q-card-section>
           <q-card-section class="column q-gutter-md">
-            <q-input v-model="payoutDialog.notes" type="textarea" outlined autogrow label="Notas administrativas" />
+            <q-input v-model="payoutDialog.notes" data-cy="payout-review-notes-input" type="textarea" outlined autogrow label="Notas administrativas" />
           </q-card-section>
           <q-card-actions align="right">
             <q-btn v-close-popup flat no-caps label="Cancelar" color="grey-5" />
-            <q-btn color="primary" no-caps label="Guardar decisión" :loading="payoutSaving" @click="submitPayoutDecision" />
+            <q-btn color="primary" no-caps data-cy="submit-payout-decision-btn" label="Guardar decisión" :loading="payoutSaving" @click="submitPayoutDecision" />
           </q-card-actions>
         </q-card>
       </q-dialog>

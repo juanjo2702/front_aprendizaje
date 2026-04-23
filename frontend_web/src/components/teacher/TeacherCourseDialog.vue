@@ -12,16 +12,29 @@
               <div class="col-12"><q-input v-model="form.title" data-cy="course-title-input" label="Título" outlined dense /></div>
               <div class="col-12"><q-input v-model="form.short_description" data-cy="course-short-description-input" label="Resumen corto" outlined dense maxlength="300" counter /></div>
               <div class="col-12"><q-input v-model="form.description" data-cy="course-description-input" type="textarea" label="Descripción" outlined autogrow /></div>
+              <div class="col-12">
+                <q-input
+                  v-model="form.thumbnail"
+                  data-cy="course-thumbnail-input"
+                  label="URL de portada del curso"
+                  outlined
+                  dense
+                  hint="Pega una imagen pública .jpg/.png/.webp para que el marketplace no muestre el fallback."
+                />
+              </div>
+              <div class="col-12">
+                <q-input v-model="form.promo_video" data-cy="course-promo-video-input" label="URL de video trailer" outlined dense />
+              </div>
               <div class="col-12 col-md-4"><q-input v-model.number="form.price" data-cy="course-price-input" label="Precio" type="number" outlined dense min="0" step="0.01" /></div>
               <div class="col-12 col-md-4"><q-select v-model="form.category_id" data-cy="course-category-select" :options="categoryOptions" emit-value map-options label="Categoría" outlined dense clearable /></div>
               <div class="col-12 col-md-4"><q-select v-model="form.level" data-cy="course-level-select" :options="levelOptions" emit-value map-options label="Nivel" outlined dense /></div>
               <div class="col-12 col-md-4"><q-input v-model="form.language" data-cy="course-language-input" label="Idioma" outlined dense maxlength="10" /></div>
               <div class="col-12 col-md-4"><q-select v-model="form.status" data-cy="course-status-select" :options="statusOptions" emit-value map-options label="Estado" outlined dense /></div>
               <div class="col-12 col-md-4 flex flex-center"><q-toggle v-model="form.has_certificate" data-cy="course-has-certificate-toggle" color="secondary" label="Emitir certificado" /></div>
-              <div class="col-12" v-if="form.has_certificate">
+              <div v-if="form.has_certificate" class="col-12">
                 <q-input v-model.number="form.certificate_min_score" data-cy="course-certificate-min-score-input" label="Puntaje mínimo" type="number" outlined dense min="0" max="100" />
               </div>
-              <div class="col-12" v-if="form.has_certificate">
+              <div v-if="form.has_certificate" class="col-12">
                 <q-toggle
                   v-model="form.certificate_requires_final_exam"
                   data-cy="course-final-exam-toggle"
@@ -79,6 +92,8 @@ function emptyForm() {
     title: '',
     description: '',
     short_description: '',
+    thumbnail: '',
+    promo_video: '',
     price: 0,
     category_id: null,
     level: 'all_levels',
@@ -102,6 +117,8 @@ function resetForm() {
     title: props.course.title || '',
     description: props.course.description || '',
     short_description: props.course.short_description || '',
+    thumbnail: props.course.thumbnail || '',
+    promo_video: props.course.promo_video || '',
     price: Number(props.course.price || 0),
     category_id: props.course.category_id || null,
     level: props.course.level || 'all_levels',
@@ -124,6 +141,8 @@ function submit() {
     title: form.value.title?.trim(),
     description: form.value.description?.trim() || null,
     short_description: form.value.short_description?.trim() || null,
+    thumbnail: form.value.thumbnail?.trim() || null,
+    promo_video: form.value.promo_video?.trim() || null,
     price: Number(form.value.price || 0),
     category_id: form.value.category_id || null,
     level: form.value.level,
@@ -144,6 +163,8 @@ function fillDemoTemplate() {
     title: `Curso Demo Docente ${stamp}`,
     short_description: 'Curso de prueba para validar crear, editar, publicar y eliminar.',
     description: 'Este curso demo sirve para probar el flujo del docente mientras dejamos lista la edición de módulos, clases y actividades.',
+    thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+    promo_video: '',
     price: 0,
     level: 'beginner',
     language: 'es',

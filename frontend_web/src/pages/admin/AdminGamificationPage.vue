@@ -1,5 +1,5 @@
 <template>
-  <q-page class="admin-page q-pa-xl">
+  <q-page class="admin-page q-pa-xl" data-cy="admin-gamification-page">
     <div class="page-wrap">
       <div class="row items-center justify-between q-col-gutter-md q-mb-lg">
         <div class="col-12 col-lg">
@@ -14,15 +14,15 @@
       </div>
 
       <q-tabs v-model="tab" no-caps inline-label class="q-mb-lg admin-tabs" active-color="primary" indicator-color="primary">
-        <q-tab name="badges" icon="military_tech" label="Badges" />
-        <q-tab name="levels" icon="stairs" label="Niveles" />
-        <q-tab name="rewards" icon="redeem" label="Tienda" />
+        <q-tab name="badges" icon="military_tech" label="Badges" data-cy="gamification-badges-tab" />
+        <q-tab name="levels" icon="stairs" label="Niveles" data-cy="gamification-levels-tab" />
+        <q-tab name="rewards" icon="redeem" label="Tienda" data-cy="gamification-rewards-tab" />
       </q-tabs>
 
       <q-tab-panels v-model="tab" animated class="bg-transparent">
         <q-tab-panel name="badges" class="q-pa-none">
           <div class="row justify-end q-mb-md">
-            <q-btn color="primary" no-caps icon="add" label="Nueva insignia" @click="openBadgeDialog()" />
+            <q-btn color="primary" no-caps icon="add" label="Nueva insignia" data-cy="new-badge-btn" @click="openBadgeDialog()" />
           </div>
           <q-card class="panel-card">
             <q-card-section class="q-pa-none">
@@ -47,20 +47,20 @@
                 <div class="text-h6 text-weight-bold">Curva de niveles</div>
                 <div class="text-caption text-grey-5">Define cuánta XP se requiere para subir de nivel.</div>
               </div>
-              <q-btn flat no-caps color="secondary" icon="add" label="Añadir nivel" @click="addLevelRow" />
+              <q-btn flat no-caps color="secondary" icon="add" label="Añadir nivel" data-cy="add-level-row-btn" @click="addLevelRow" />
             </div>
 
             <div class="column q-gutter-md">
               <div v-for="(level, index) in settings.gamification.levels" :key="`level-${index}`" class="level-row">
                 <div class="row q-col-gutter-md items-center">
                   <div class="col-12 col-md-2">
-                    <q-input v-model.number="level.level" type="number" outlined dense label="Nivel" />
+                    <q-input v-model.number="level.level" :data-cy="`level-number-input-${index}`" type="number" outlined dense label="Nivel" />
                   </div>
                   <div class="col-12 col-md-4">
-                    <q-input v-model.number="level.xp_required" type="number" outlined dense label="XP requerida" />
+                    <q-input v-model.number="level.xp_required" :data-cy="`level-xp-input-${index}`" type="number" outlined dense label="XP requerida" />
                   </div>
                   <div class="col-12 col-md-4">
-                    <q-input v-model="level.title" outlined dense label="Título" />
+                    <q-input v-model="level.title" :data-cy="`level-title-input-${index}`" outlined dense label="Título" />
                   </div>
                   <div class="col-12 col-md-2 row justify-end">
                     <q-btn flat round color="negative" icon="delete" @click="removeLevelRow(index)" />
@@ -70,14 +70,14 @@
             </div>
 
             <div class="row justify-end q-mt-lg">
-              <q-btn color="primary" no-caps label="Guardar niveles" :loading="settingsSaving" @click="saveSettings" />
+              <q-btn color="primary" no-caps data-cy="save-levels-btn" label="Guardar niveles" :loading="settingsSaving" @click="saveSettings" />
             </div>
           </q-card>
         </q-tab-panel>
 
         <q-tab-panel name="rewards" class="q-pa-none">
           <div class="row justify-end q-mb-md">
-            <q-btn color="primary" no-caps icon="add" label="Nueva recompensa" @click="openRewardDialog()" />
+            <q-btn color="primary" no-caps icon="add" label="Nueva recompensa" data-cy="new-reward-btn" @click="openRewardDialog()" />
           </div>
           <q-card class="panel-card">
             <q-card-section class="q-pa-none">
@@ -104,17 +104,18 @@
       </q-tab-panels>
 
       <q-dialog v-model="badgeDialog.open" persistent>
-        <q-card style="width: min(560px, 92vw)">
+        <q-card style="width: min(560px, 92vw)" data-cy="badge-dialog">
           <q-card-section>
             <div class="text-h6">{{ badgeDialog.model?.id ? 'Editar badge' : 'Nuevo badge' }}</div>
           </q-card-section>
           <q-card-section class="column q-gutter-md">
-            <q-input v-model="badgeDialog.model.name" outlined label="Nombre" />
-            <q-input v-model="badgeDialog.model.description" outlined type="textarea" autogrow label="Descripción" />
-            <q-input v-model="badgeDialog.model.icon" outlined label="Icono / nombre Material" />
-            <q-select v-model="badgeDialog.model.type" :options="badgeTypeOptions" outlined emit-value map-options label="Tipo" />
+            <q-input v-model="badgeDialog.model.name" data-cy="badge-name-input" outlined label="Nombre" />
+            <q-input v-model="badgeDialog.model.description" data-cy="badge-description-input" outlined type="textarea" autogrow label="Descripción" />
+            <q-input v-model="badgeDialog.model.icon" data-cy="badge-icon-input" outlined label="Icono / nombre Material" />
+            <q-select v-model="badgeDialog.model.type" data-cy="badge-type-select" :options="badgeTypeOptions" outlined emit-value map-options label="Tipo" />
             <q-input
               v-model="badgeDialog.criteriaText"
+              data-cy="badge-criteria-input"
               outlined
               type="textarea"
               autogrow
@@ -122,31 +123,31 @@
             />
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat no-caps label="Cancelar" color="grey-5" v-close-popup />
-            <q-btn color="primary" no-caps label="Guardar" :loading="badgeSaving" @click="saveBadge" />
+            <q-btn v-close-popup flat no-caps label="Cancelar" color="grey-5" />
+            <q-btn color="primary" no-caps data-cy="save-badge-btn" label="Guardar" :loading="badgeSaving" @click="saveBadge" />
           </q-card-actions>
         </q-card>
       </q-dialog>
 
       <q-dialog v-model="rewardDialog.open" persistent>
-        <q-card style="width: min(620px, 92vw)">
+        <q-card style="width: min(620px, 92vw)" data-cy="reward-dialog">
           <q-card-section>
             <div class="text-h6">{{ rewardDialog.model?.id ? 'Editar recompensa' : 'Nueva recompensa' }}</div>
           </q-card-section>
           <q-card-section class="row q-col-gutter-md">
-            <div class="col-12 col-md-6"><q-input v-model="rewardDialog.model.name" outlined label="Nombre" /></div>
-            <div class="col-12 col-md-6"><q-select v-model="rewardDialog.model.type" :options="rewardTypeOptions" outlined emit-value map-options label="Tipo" /></div>
-            <div class="col-12"><q-input v-model="rewardDialog.model.description" type="textarea" autogrow outlined label="Descripción" /></div>
-            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.cost_coins" type="number" outlined label="Costo en monedas" /></div>
-            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.minimum_level_required" type="number" outlined label="Nivel mínimo" /></div>
-            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.stock" type="number" outlined label="Stock" /></div>
+            <div class="col-12 col-md-6"><q-input v-model="rewardDialog.model.name" data-cy="reward-name-input" outlined label="Nombre" /></div>
+            <div class="col-12 col-md-6"><q-select v-model="rewardDialog.model.type" data-cy="reward-type-select" :options="rewardTypeOptions" outlined emit-value map-options label="Tipo" /></div>
+            <div class="col-12"><q-input v-model="rewardDialog.model.description" data-cy="reward-description-input" type="textarea" autogrow outlined label="Descripción" /></div>
+            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.cost_coins" data-cy="reward-cost-input" type="number" outlined label="Costo en monedas" /></div>
+            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.minimum_level_required" data-cy="reward-level-input" type="number" outlined label="Nivel mínimo" /></div>
+            <div class="col-12 col-md-4"><q-input v-model.number="rewardDialog.model.stock" data-cy="reward-stock-input" type="number" outlined label="Stock" /></div>
             <div class="col-12">
               <q-toggle v-model="rewardDialog.model.is_active" color="secondary" label="Recompensa activa" />
             </div>
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat no-caps label="Cancelar" color="grey-5" v-close-popup />
-            <q-btn color="primary" no-caps label="Guardar" :loading="rewardSaving" @click="saveReward" />
+            <q-btn v-close-popup flat no-caps label="Cancelar" color="grey-5" />
+            <q-btn color="primary" no-caps data-cy="save-reward-btn" label="Guardar" :loading="rewardSaving" @click="saveReward" />
           </q-card-actions>
         </q-card>
       </q-dialog>

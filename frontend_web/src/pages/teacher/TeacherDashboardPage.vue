@@ -181,7 +181,12 @@
               </div>
 
               <q-list v-if="recentAlerts.length" separator dark>
-                <q-item v-for="(alert, index) in recentAlerts" :key="`${alert.type}-${index}`">
+                <q-item
+                  v-for="(alert, index) in recentAlerts"
+                  :key="`${alert.type}-${index}`"
+                  :clickable="Boolean(alert.lesson_id)"
+                  @click="openAlertContext(alert)"
+                >
                   <q-item-section avatar>
                     <q-avatar :color="alert.type === 'question' ? 'secondary' : 'negative'" text-color="white">
                       <q-icon :name="alert.type === 'question' ? 'forum' : 'warning'" />
@@ -189,10 +194,13 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>{{ alert.student_name || 'Alumno' }}</q-item-label>
-                    <q-item-label caption v-if="alert.course_title">
+                    <q-item-label v-if="alert.course_title" caption>
                       {{ alert.course_title }}<span v-if="alert.lesson_title"> · {{ alert.lesson_title }}</span>
                     </q-item-label>
                     <q-item-label caption>{{ describeAlert(alert) }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section v-if="alert.lesson_id" side>
+                    <q-btn flat dense no-caps color="secondary" icon="reply" label="Responder" @click.stop="openAlertContext(alert)" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -417,6 +425,18 @@ function previewCourse(course) {
 
 function openCourseManager() {
   router.push({ name: 'teacher-courses' })
+}
+
+function openAlertContext(alert) {
+  if (!alert?.lesson_id) return
+
+  router.push({
+    name: 'teacher-lesson-preview',
+    params: { lessonId: alert.lesson_id },
+    query: {
+      courseTitle: alert.course_title || '',
+    },
+  })
 }
 
 function describeAlert(alert) {

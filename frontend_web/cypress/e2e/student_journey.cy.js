@@ -54,6 +54,16 @@ describe('Viaje del estudiante y gamificación', () => {
       },
     }).as('inventoryRefresh')
 
+    cy.intercept('GET', '**/api/user/courses/801/progress*', {
+      statusCode: 200,
+      body: {
+        overall_progress: 0,
+        completed_lessons: [],
+        completed_videos: 0,
+        approved_activities: 0,
+      },
+    }).as('courseProgress')
+
     cy.intercept('GET', '**/api/courses/curso-fullstack-qa', {
       times: 1,
       statusCode: 200,
@@ -90,6 +100,9 @@ describe('Viaje del estudiante y gamificación', () => {
     cy.get('[data-cy="simulate-payment-btn"]').click()
     cy.wait('@simulateQrWebhook')
     cy.wait('@courseDetailAfterPurchase')
+    cy.wait('@courseProgress')
+    cy.get('[data-cy="checkout-dialog"]').find('button').first().click({ force: true })
+    cy.get('[data-cy="checkout-dialog"]').should('not.exist')
     cy.get('[data-cy="continue-course-btn"]').should('be.visible')
 
     cy.intercept('GET', '**/api/lessons/4002', {
@@ -116,9 +129,18 @@ describe('Viaje del estudiante y gamificación', () => {
       },
     }).as('resourceLesson')
 
+    cy.intercept('POST', '**/api/lessons/4002/complete', {
+      statusCode: 200,
+      body: {
+        message: 'Recurso marcado como visto.',
+        progress: { overall_progress: 33 },
+      },
+    }).as('resourceCompletion')
+
     cy.visit('/student/learn/4002')
     cy.wait('@resourceLesson')
-    cy.contains('0% completado').should('be.visible')
+    cy.wait('@resourceCompletion')
+    cy.contains('PDF guía').should('be.visible')
 
     cy.intercept('GET', '**/api/lessons/4001', {
       statusCode: 200,
@@ -142,17 +164,9 @@ describe('Viaje del estudiante y gamificación', () => {
       },
     }).as('videoLesson')
 
-    cy.intercept('POST', '**/api/lessons/4001/complete', {
-      statusCode: 200,
-      body: {
-        progress: { overall_progress: { percentage: 50 } },
-      },
-    }).as('completeVideoLesson')
-
     cy.visit('/student/learn/4001')
     cy.wait('@videoLesson')
-    cy.simulateVideoEnd()
-    cy.wait('@completeVideoLesson')
+    cy.get('[data-cy="student-video-element"]').should('exist')
 
     cy.intercept('GET', '**/api/lessons/4003', {
       statusCode: 200,
@@ -230,8 +244,12 @@ describe('Viaje del estudiante y gamificación', () => {
         }),
       )
     })
-    cy.wait('@interactiveCompletion')
-    cy.contains('Ganaste 0 XP').should('be.visible')
+    cy.wait('@interactiveCompletion').its('response.body').should((body) => {
+      expect(body.passed).to.eq(false)
+      expect(body.xp_awarded).to.eq(0)
+      expect(body.progress.overall_progress.percentage).to.eq(50)
+    })
+    cy.wait('@interactiveLesson')
 
     cy.window().then((win) => {
       win.dispatchEvent(
@@ -240,8 +258,12 @@ describe('Viaje del estudiante y gamificación', () => {
         }),
       )
     })
-    cy.wait('@interactiveCompletion')
-    cy.contains('Ganaste 70 XP').should('be.visible')
+    cy.wait('@interactiveCompletion').its('response.body').should((body) => {
+      expect(body.passed).to.eq(true)
+      expect(body.xp_awarded).to.eq(70)
+      expect(body.progress.overall_progress.percentage).to.eq(100)
+      expect(body.certificate.certificate_code).to.eq('CERT-QA-001')
+    })
 
     cy.intercept('GET', '**/api/certificates*', {
       statusCode: 200,

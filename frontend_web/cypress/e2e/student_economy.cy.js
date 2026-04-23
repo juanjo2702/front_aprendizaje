@@ -176,10 +176,19 @@ describe('Economía del estudiante e inventario', () => {
       },
     }).as('lessonWithComments')
 
+    cy.intercept('POST', '**/api/lessons/4003/complete', {
+      statusCode: 200,
+      body: {
+        message: 'Recurso marcado como visto.',
+        progress: { overall_progress: 100 },
+      },
+    }).as('supportLessonSeen')
+
     cy.visit('/student/learn/4003')
     cy.wait('@lessonWithComments')
+    cy.wait('@supportLessonSeen')
     cy.wait('@comments')
-    cy.get('[data-cy="comment-avatar-btn-3001"]').click()
+    cy.get('[data-cy="comment-avatar-btn-3001"]').should('be.visible').click({ force: true })
     cy.wait('@miniProfile')
     cy.get('[data-cy="mini-profile-dialog"]').should('be.visible')
     cy.get('[data-cy="frame-neon"]').should('exist')

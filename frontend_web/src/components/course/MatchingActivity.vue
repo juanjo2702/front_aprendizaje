@@ -109,7 +109,7 @@
           no-caps
           icon="mdi-check-circle-outline"
           :label="previewMode && previewCompletionSent ? 'Vista previa finalizada' : (previewMode ? 'Finalizar vista previa' : 'Registrar resultado')"
-          :disable="previewMode && previewCompletionSent"
+          :disable="previewCompletionSent"
           @click="emitCompleted"
         />
       </div>
@@ -248,8 +248,8 @@ function submitGame() {
 }
 
 function emitCompleted() {
-  if (props.previewMode && previewCompletionSent.value) return
-  if (props.previewMode) previewCompletionSent.value = true
+  if (previewCompletionSent.value) return
+  previewCompletionSent.value = true
 
   emit('completed', {
     score: finalScore.value || 0,

@@ -1,5 +1,5 @@
 <template>
-  <q-page class="teacher-page q-pa-xl">
+  <q-page class="teacher-page q-pa-xl" data-cy="teacher-students-page">
     <div class="page-wrap">
       <section class="hero-panel q-pa-xl q-mb-lg">
         <div class="row q-col-gutter-xl items-center">
@@ -35,6 +35,7 @@
             <div class="text-h6 text-weight-bold q-mb-md">Contexto del curso</div>
             <q-select
               v-model="selectedCourseId"
+              data-cy="teacher-student-course-select"
               outlined
               dense
               emit-value
@@ -45,6 +46,7 @@
             />
             <q-input
               v-model="search"
+              data-cy="teacher-student-search-input"
               outlined
               dense
               class="q-mt-md"
@@ -154,7 +156,7 @@
 
           <template #body-cell-actions="slotProps">
             <q-td :props="slotProps">
-              <q-btn flat no-caps color="secondary" label="Ver detalle" @click="openDrilldown(slotProps.row)" />
+              <q-btn flat no-caps color="secondary" :data-cy="`student-drilldown-btn-${slotProps.row.student.id}`" label="Ver detalle" @click="openDrilldown(slotProps.row)" />
             </q-td>
           </template>
         </q-table>
@@ -162,7 +164,7 @@
     </div>
 
     <q-dialog v-model="detailDialog">
-      <q-card class="detail-dialog">
+      <q-card class="detail-dialog" data-cy="student-drilldown-dialog">
         <q-card-section class="row items-center justify-between">
           <div>
             <div class="text-h6">{{ selectedStudentDetail?.student?.name || 'Detalle del alumno' }}</div>

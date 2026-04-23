@@ -60,8 +60,8 @@
               color="grey-4"
               icon="sync"
               label="Forzar sync"
-              @click="flushPendingProgress"
               :disable="!hasPendingQueue"
+              @click="flushPendingProgress"
             />
           </div>
         </div>
@@ -145,6 +145,7 @@ const sidebarCollapsed = ref(false)
 const serverVictoryMessage = ref('')
 const interactiveSubmitting = ref(false)
 const videoCompleted = ref(false)
+const autoCompletedLessonIds = ref(new Set())
 
 const lessonId = computed(() => Number(route.params.lessonId || props.initialLessonId))
 const lesson = computed(() => responseData.value?.lesson || {})
@@ -153,6 +154,7 @@ const content = computed(() => lesson.value?.content || { kind: 'reading', paylo
 const modules = computed(() => responseData.value?.sidebar?.modules || [])
 const navigation = computed(() => responseData.value?.navigation || {})
 const interactiveConfig = computed(() => responseData.value?.interactive_config || null)
+const interactiveAttemptState = computed(() => responseData.value?.interactive_attempt_state || null)
 const commentTarget = computed(() => responseData.value?.comment_target || null)
 const overallProgress = computed(() => responseData.value?.course?.progress?.overall_progress || 0)
 const hasPendingQueue = computed(() => pendingProgressQueue.value.length > 0)
@@ -175,6 +177,7 @@ const rendererProps = computed(() => {
   if (content.value.kind === 'interactive') {
     return {
       interactiveConfig: interactiveConfig.value,
+      attemptState: interactiveAttemptState.value,
       previewMode: false,
     }
   }
@@ -200,15 +203,31 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [content.value.kind, lesson.value.id, responseData.value],
+  () => {
+    if (['reading', 'resource'].includes(content.value.kind)) {
+      markSupportLessonSeen()
+    }
+  },
+  { flush: 'post' },
+)
+
 onMounted(() => {
   studentStore.flushPendingProgress()
   if (typeof window !== 'undefined') {
+    window.__qaCompleteCurrentVideo = handleVideoEnded
+    window.__qaCompleteInteractive = onQaInteractiveCompleted
+    window.addEventListener('qa:video-ended', onQaVideoEnded)
     window.addEventListener('qa:interactive-completed', onQaInteractiveCompleted)
   }
 })
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
+    delete window.__qaCompleteCurrentVideo
+    delete window.__qaCompleteInteractive
+    window.removeEventListener('qa:video-ended', onQaVideoEnded)
     window.removeEventListener('qa:interactive-completed', onQaInteractiveCompleted)
   }
 })
@@ -225,6 +244,38 @@ async function loadLesson(id) {
     errorMessage.value = error?.response?.data?.message || 'No se pudo cargar el reproductor.'
   } finally {
     loading.value = false
+  }
+}
+
+function isCurrentLessonCompleted() {
+  const currentId = Number(lesson.value.id || 0)
+  return modules.value
+    .flatMap((module) => module.lessons || [])
+    .some((item) => Number(item.id) === currentId && item.is_completed)
+}
+
+async function markSupportLessonSeen() {
+  const currentLessonId = Number(lesson.value.id || 0)
+  if (!currentLessonId || isCurrentLessonCompleted() || autoCompletedLessonIds.value.has(currentLessonId)) return
+  autoCompletedLessonIds.value.add(currentLessonId)
+
+  try {
+    const result = await studentStore.submitLessonCompletion(currentLessonId, {
+      time_spent_seconds: lesson.value.duration || 0,
+    })
+
+    if (!result?.queued) {
+      serverVictoryMessage.value = content.value.kind === 'resource'
+        ? 'Recurso marcado como visto.'
+        : 'Lectura marcada como vista.'
+      await loadLesson(currentLessonId)
+    }
+  } catch (error) {
+    autoCompletedLessonIds.value.delete(currentLessonId)
+    $q.notify({
+      type: 'warning',
+      message: error?.response?.data?.message || 'No se pudo registrar esta lección como vista.',
+    })
   }
 }
 
@@ -253,6 +304,10 @@ function lessonIcon(type) {
 
 function onQaInteractiveCompleted(event) {
   handleInteractiveCompleted(event?.detail || {})
+}
+
+function onQaVideoEnded() {
+  handleVideoEnded()
 }
 
 async function handleVideoEnded() {
@@ -296,7 +351,12 @@ async function handleInteractiveCompleted(result) {
       return
     }
 
-    serverVictoryMessage.value = `Victoria validada por el servidor. Ganaste ${Number(response?.xp_awarded || 0)} XP.`
+    const attempt = response?.attempt || {}
+    serverVictoryMessage.value = attempt.passed
+      ? `Actividad aprobada. Ganaste ${Number(response?.xp_awarded || 0)} XP.`
+      : (attempt.locked
+        ? 'Actividad bloqueada por agotar intentos. Contacta al docente.'
+        : `Intento registrado (${attempt.score || 0}%). Te quedan ${Math.max(0, Number(attempt.max_attempts || 0) - Number(attempt.attempt_number || 0))} intento(s).`)
     await loadLesson(lesson.value.id)
   } catch (error) {
     $q.notify({ type: 'negative', message: error?.response?.data?.message || 'No se pudo registrar la actividad.' })
