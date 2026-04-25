@@ -170,6 +170,8 @@ const rendererProps = computed(() => {
   if (content.value.kind === 'video') {
     return {
       source: content.value.payload?.video_url || '',
+      embedUrl: content.value.payload?.embed_url || '',
+      provider: content.value.payload?.provider || '',
       poster: course.value?.thumbnail || '',
     }
   }

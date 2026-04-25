@@ -13,13 +13,31 @@
               <div class="col-12"><q-input v-model="form.short_description" data-cy="course-short-description-input" label="Resumen corto" outlined dense maxlength="300" counter /></div>
               <div class="col-12"><q-input v-model="form.description" data-cy="course-description-input" type="textarea" label="Descripción" outlined autogrow /></div>
               <div class="col-12">
+                <q-file
+                  v-model="form.thumbnail_file"
+                  data-cy="course-thumbnail-file-input"
+                  label="Subir portada desde tu equipo"
+                  outlined
+                  dense
+                  clearable
+                  accept=".jpg,.jpeg,.png,.webp,image/*"
+                  hint="Puedes seleccionar una imagen local en JPG, PNG o WEBP."
+                  @update:model-value="handleThumbnailSelected"
+                  @clear="clearThumbnailFile"
+                >
+                  <template #prepend>
+                    <q-icon name="upload" />
+                  </template>
+                </q-file>
+              </div>
+              <div class="col-12">
                 <q-input
                   v-model="form.thumbnail"
                   data-cy="course-thumbnail-input"
                   label="URL de portada del curso"
                   outlined
                   dense
-                  hint="Pega una imagen pública .jpg/.png/.webp para que el marketplace no muestre el fallback."
+                  hint="Opcional: también puedes pegar una URL pública si no quieres subir archivo."
                 />
               </div>
               <div class="col-12">
@@ -72,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import TeacherCourseLivePreview from 'src/components/teacher/TeacherCourseLivePreview.vue'
 
 const props = defineProps({
@@ -93,6 +111,8 @@ function emptyForm() {
     description: '',
     short_description: '',
     thumbnail: '',
+    thumbnail_file: null,
+    thumbnail_preview: '',
     promo_video: '',
     price: 0,
     category_id: null,
@@ -118,6 +138,8 @@ function resetForm() {
     description: props.course.description || '',
     short_description: props.course.short_description || '',
     thumbnail: props.course.thumbnail || '',
+    thumbnail_file: null,
+    thumbnail_preview: props.course.thumbnail || '',
     promo_video: props.course.promo_video || '',
     price: Number(props.course.price || 0),
     category_id: props.course.category_id || null,
@@ -142,6 +164,7 @@ function submit() {
     description: form.value.description?.trim() || null,
     short_description: form.value.short_description?.trim() || null,
     thumbnail: form.value.thumbnail?.trim() || null,
+    thumbnail_file: form.value.thumbnail_file || null,
     promo_video: form.value.promo_video?.trim() || null,
     price: Number(form.value.price || 0),
     category_id: form.value.category_id || null,
@@ -157,6 +180,7 @@ function submit() {
 }
 
 function fillDemoTemplate() {
+  clearThumbnailFile()
   const stamp = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })
   form.value = {
     ...form.value,
@@ -164,6 +188,7 @@ function fillDemoTemplate() {
     short_description: 'Curso de prueba para validar crear, editar, publicar y eliminar.',
     description: 'Este curso demo sirve para probar el flujo del docente mientras dejamos lista la edición de módulos, clases y actividades.',
     thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+    thumbnail_preview: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
     promo_video: '',
     price: 0,
     level: 'beginner',
@@ -177,8 +202,40 @@ function fillDemoTemplate() {
   }
 }
 
+function handleThumbnailSelected(file) {
+  revokeThumbnailPreview()
+
+  if (!file) {
+    form.value.thumbnail_file = null
+    form.value.thumbnail_preview = form.value.thumbnail || ''
+    return
+  }
+
+  form.value.thumbnail_file = file
+  form.value.thumbnail_preview = URL.createObjectURL(file)
+}
+
+function clearThumbnailFile() {
+  revokeThumbnailPreview()
+  form.value.thumbnail_file = null
+  form.value.thumbnail_preview = form.value.thumbnail || ''
+}
+
+function revokeThumbnailPreview() {
+  if (form.value.thumbnail_preview?.startsWith?.('blob:')) {
+    URL.revokeObjectURL(form.value.thumbnail_preview)
+  }
+}
+
 watch(() => [props.modelValue, props.course], ([open]) => {
-  if (open) resetForm()
+  if (open) {
+    revokeThumbnailPreview()
+    resetForm()
+  }
+})
+
+onBeforeUnmount(() => {
+  revokeThumbnailPreview()
 })
 </script>
 

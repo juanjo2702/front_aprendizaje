@@ -2,7 +2,7 @@
   <div class="column q-gutter-md">
     <q-card class="preview-card q-pa-lg">
       <div class="cover-preview q-mb-md">
-        <img v-if="form.thumbnail" :src="form.thumbnail" alt="Portada del curso" />
+        <img v-if="coverSource" :src="coverSource" alt="Portada del curso" />
         <div v-else class="cover-empty">
           <q-icon name="image" size="42px" />
           <span>Portada pendiente</span>
@@ -117,6 +117,7 @@ const statusLabel = computed(() => props.statusOptions.find((item) => item.value
 const languageLabel = computed(() => (props.form.language || 'es').toUpperCase())
 const normalizedScore = computed(() => Number(props.form.certificate_min_score || 70))
 const formattedPrice = computed(() => new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'USD' }).format(Number(props.form.price || 0)))
+const coverSource = computed(() => props.form.thumbnail_preview || props.form.thumbnail || '')
 const statusColor = computed(() => ({
   draft: 'warning',
   pending: 'orange',

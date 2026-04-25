@@ -167,6 +167,13 @@
 
               <q-separator class="q-my-lg" />
 
+              <CommentSection
+                v-if="commentTarget?.type && commentTarget?.id"
+                class="q-mb-lg"
+                :comment-target="commentTarget"
+                :focus-comment-id="focusCommentId"
+              />
+
               <div class="row justify-between">
                 <q-btn
                   v-if="navigation.previous_lesson"
@@ -214,9 +221,11 @@
                   <q-item-section>
                     <q-item-label class="row items-center q-gutter-sm">
                       <span>{{ entry.name }}</span>
-                      <q-badge v-if="entry.equipped_profile_title?.label" color="dark" text-color="warning">
-                        {{ entry.equipped_profile_title.label }}
-                      </q-badge>
+                      <template v-for="title in leaderboardTitles(entry)" :key="`${entry.user_id}-${title.user_item_id || title.label}`">
+                        <q-badge color="dark" text-color="warning">
+                          {{ title.label }}
+                        </q-badge>
+                      </template>
                     </q-item-label>
                     <q-item-label caption>
                       {{ entry.completed_activities }} actividades completadas
@@ -249,6 +258,7 @@ import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services/api'
 import ActivityRenderer from 'src/components/course/ActivityRenderer.vue'
+import CommentSection from 'src/components/comments/CommentSection.vue'
 import AvatarConMarco from 'src/components/shared/AvatarConMarco.vue'
 import MiniProfileDialog from 'src/components/shared/MiniProfileDialog.vue'
 
@@ -283,10 +293,15 @@ const content = computed(() => lesson.value?.content || { kind: 'reading', paylo
 const modules = computed(() => responseData.value?.sidebar?.modules || [])
 const navigation = computed(() => responseData.value?.navigation || {})
 const interactiveConfig = computed(() => responseData.value?.interactive_config || null)
+const commentTarget = computed(() => responseData.value?.comment_target || null)
 const gamification = computed(
   () => responseData.value?.gamification || { enabled: false, leaderboard: [] },
 )
 const overallProgress = computed(() => responseData.value?.course?.progress?.overall_progress || 0)
+const focusCommentId = computed(() => {
+  const rawValue = Number(route.query.focusComment || 0)
+  return rawValue > 0 ? rawValue : null
+})
 
 watch(
   lessonId,
@@ -327,6 +342,14 @@ function openMiniProfile(userId) {
   if (!userId) return
   activeMiniProfileId.value = userId
   miniProfileDialog.value = true
+}
+
+function leaderboardTitles(entry) {
+  if (Array.isArray(entry?.equipped_profile_titles) && entry.equipped_profile_titles.length) {
+    return entry.equipped_profile_titles.slice(0, 3)
+  }
+
+  return entry?.equipped_profile_title ? [entry.equipped_profile_title] : []
 }
 
 function openLesson(id) {

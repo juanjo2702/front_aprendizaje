@@ -79,9 +79,25 @@
                   <q-item-label caption>
                     {{ describeAlert(alert) }}
                   </q-item-label>
+                  <q-item-label v-if="alert.course_title || alert.lesson_title" caption class="text-secondary">
+                    {{ describeAlertContext(alert) }}
+                  </q-item-label>
                 </q-item-section>
-                <q-item-section side class="text-caption text-grey-6">
-                  {{ formatDate(alert.created_at) }}
+                <q-item-section side class="items-end q-gutter-xs">
+                  <div class="text-caption text-grey-6">
+                    {{ formatDate(alert.created_at) }}
+                  </div>
+                  <q-btn
+                    v-if="canOpenAlertContext(alert)"
+                    flat
+                    dense
+                    no-caps
+                    size="sm"
+                    color="secondary"
+                    icon="open_in_new"
+                    label="Abrir contexto"
+                    @click="openAlertContext(alert)"
+                  />
                 </q-item-section>
               </q-item>
             </q-list>
@@ -252,6 +268,22 @@
                     <q-item-label caption>
                       {{ question.reply_count }} respuestas · {{ question.resolved_at ? 'Resuelta' : 'Abierta' }}
                     </q-item-label>
+                    <q-item-label v-if="question.course_title || question.lesson_title" caption class="text-secondary">
+                      {{ describeAlertContext(question) }}
+                    </q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn
+                      v-if="canOpenAlertContext(question)"
+                      flat
+                      dense
+                      no-caps
+                      size="sm"
+                      color="secondary"
+                      icon="open_in_new"
+                      label="Responder"
+                      @click="openAlertContext(question)"
+                    />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -290,9 +322,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import { api } from 'src/services/api'
 
 const $q = useQuasar()
+const router = useRouter()
 
 const loading = ref(false)
 const detailLoading = ref(false)
@@ -371,6 +405,41 @@ function describeAlert(alert) {
   }
 
   return `${alert.course_title} · ${alert.failed_activities_count || 0} fallos · ${alert.days_inactive || 0} días sin entrar`
+}
+
+function describeAlertContext(alert) {
+  const courseTitle = alert.course_title || 'Curso'
+  const lessonTitle = alert.lesson_title || null
+
+  return lessonTitle ? `${courseTitle} · ${lessonTitle}` : courseTitle
+}
+
+function canOpenAlertContext(alert) {
+  return Boolean(alert.course_slug || alert.lesson_id)
+}
+
+function openAlertContext(alert) {
+  if (alert.lesson_id) {
+    router.push({
+      name: 'teacher-lesson-preview',
+      params: { lessonId: alert.lesson_id },
+      query: {
+        courseTitle: alert.course_title || '',
+        focusComment: alert.id ? String(alert.id) : '',
+      },
+    })
+    return
+  }
+
+  if (alert.course_slug) {
+    router.push({
+      name: 'teacher-course-preview',
+      params: { slug: alert.course_slug },
+      query: {
+        focusComment: alert.id ? String(alert.id) : '',
+      },
+    })
+  }
 }
 
 async function loadCourses() {

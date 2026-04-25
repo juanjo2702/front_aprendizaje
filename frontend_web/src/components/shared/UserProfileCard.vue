@@ -11,9 +11,16 @@
 
       <div class="user-profile-card__copy">
         <div class="text-h6 text-weight-bold">{{ profile?.name }}</div>
-        <q-badge v-if="profile?.equipped_profile_title?.label" color="dark" text-color="warning" class="q-mt-xs">
-          {{ profile.equipped_profile_title.label }}
-        </q-badge>
+        <div v-if="profileTitles.length" class="title-strip q-mt-xs">
+          <q-badge
+            v-for="title in profileTitles"
+            :key="title.user_item_id || title.label"
+            color="dark"
+            text-color="warning"
+          >
+            {{ title.label }}
+          </q-badge>
+        </div>
         <div class="text-caption text-grey-5 q-mt-sm">
           Nivel {{ profile?.level || 1 }} · {{ profile?.level_title || 'Aprendiz' }}
         </div>
@@ -36,8 +43,8 @@
         <strong>{{ profile?.equipped_avatar_frame?.name || 'Sin marco' }}</strong>
       </div>
       <div class="mini-stat">
-        <span>Título</span>
-        <strong>{{ profile?.equipped_profile_title?.label || 'Sin título' }}</strong>
+        <span>Títulos</span>
+        <strong>{{ profileTitlesLabel }}</strong>
       </div>
     </div>
 
@@ -62,9 +69,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import AvatarFrame from 'src/components/shared/AvatarFrame.vue'
 
-defineProps({
+const props = defineProps({
   profile: {
     type: Object,
     default: null,
@@ -78,6 +86,19 @@ defineProps({
     default: true,
   },
 })
+
+const profileTitles = computed(() => {
+  const titles = props.profile?.equipped_profile_titles
+  if (Array.isArray(titles) && titles.length) return titles.slice(0, 3)
+
+  return props.profile?.equipped_profile_title ? [props.profile.equipped_profile_title] : []
+})
+
+const profileTitlesLabel = computed(() => (
+  profileTitles.value.length
+    ? profileTitles.value.map((title) => title.label).join(' · ')
+    : 'Sin títulos'
+))
 </script>
 
 <style scoped>
@@ -95,6 +116,12 @@ defineProps({
 
 .user-profile-card__copy {
   min-width: 0;
+}
+
+.title-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .user-profile-card__stats {

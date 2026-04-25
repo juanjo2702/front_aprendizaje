@@ -73,9 +73,11 @@
           <div class="comment-body">
             <div class="comment-meta">
               <span class="text-weight-bold">{{ comment.author?.name || 'Usuario' }}</span>
-              <q-badge v-if="comment.author?.equipped_profile_title?.label" color="dark" text-color="warning">
-                {{ comment.author.equipped_profile_title.label }}
-              </q-badge>
+              <template v-for="title in authorTitles(comment.author)" :key="`${comment.id}-${title.user_item_id || title.label}`">
+                <q-badge color="dark" text-color="warning">
+                  {{ title.label }}
+                </q-badge>
+              </template>
               <q-badge
                 v-if="comment.author?.level_title"
                 outline
@@ -143,9 +145,11 @@
                 <div class="reply-content">
                   <div class="comment-meta">
                     <span class="text-weight-medium">{{ reply.author?.name || 'Usuario' }}</span>
-                    <q-badge v-if="reply.author?.equipped_profile_title?.label" color="dark" text-color="warning">
-                      {{ reply.author.equipped_profile_title.label }}
-                    </q-badge>
+                    <template v-for="title in authorTitles(reply.author)" :key="`${reply.id}-${title.user_item_id || title.label}`">
+                      <q-badge color="dark" text-color="warning">
+                        {{ title.label }}
+                      </q-badge>
+                    </template>
                     <q-badge
                       v-if="reply.author?.level_title"
                       outline
@@ -169,7 +173,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from 'src/stores/auth'
 import { api } from 'src/services/api'
 import AvatarConMarco from 'src/components/shared/AvatarConMarco.vue'
@@ -178,6 +182,10 @@ import MiniProfileDialog from 'src/components/shared/MiniProfileDialog.vue'
 const props = defineProps({
   commentTarget: {
     type: Object,
+    default: null,
+  },
+  focusCommentId: {
+    type: [Number, String],
     default: null,
   },
 })
@@ -205,6 +213,14 @@ watch(
     }
   },
   { immediate: true },
+)
+
+watch(
+  [comments, () => props.focusCommentId],
+  async () => {
+    await focusRequestedComment()
+  },
+  { deep: true },
 )
 
 onMounted(() => {
@@ -245,6 +261,14 @@ function openMiniProfile(userId) {
   miniProfileDialog.value = true
 }
 
+function authorTitles(author) {
+  if (Array.isArray(author?.equipped_profile_titles) && author.equipped_profile_titles.length) {
+    return author.equipped_profile_titles.slice(0, 3)
+  }
+
+  return author?.equipped_profile_title ? [author.equipped_profile_title] : []
+}
+
 async function loadComments() {
   if (!props.commentTarget?.type || !props.commentTarget?.id) return
 
@@ -260,6 +284,7 @@ async function loadComments() {
     })
 
     comments.value = data?.comments || []
+    await focusRequestedComment()
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'No se pudieron cargar los comentarios.'
   } finally {
@@ -283,6 +308,7 @@ async function submitComment() {
 
     comments.value = [data.comment, ...comments.value]
     resetDraft()
+    await focusRequestedComment()
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'No se pudo publicar el comentario.'
   } finally {
@@ -302,11 +328,36 @@ async function submitReply(comment) {
     })
 
     comments.value = comments.value.map((item) => (item.id === comment.id ? data.comment : item))
-    cancelReply()
+    activeReplyId.value = data.comment.id
+    replyDraft.value = ''
+    await focusRequestedComment()
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'No se pudo enviar la respuesta.'
   } finally {
     replySubmitting.value = false
+  }
+}
+
+async function focusRequestedComment() {
+  const targetId = Number(props.focusCommentId || 0)
+
+  if (!targetId || !comments.value.length) {
+    return
+  }
+
+  const targetComment = comments.value.find((comment) => Number(comment.id) === targetId)
+
+  if (!targetComment) {
+    return
+  }
+
+  activeReplyId.value = targetComment.id
+
+  await nextTick()
+
+  const element = document.querySelector(`[data-cy="comment-card-${targetComment.id}"]`)
+  if (element && typeof element.scrollIntoView === 'function') {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
 </script>

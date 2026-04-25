@@ -138,6 +138,7 @@ export const useStudentStore = defineStore('student', () => {
     equipped: {
       frame: null,
       title: null,
+      titles: [],
     },
     miniProfile: null,
     locker: {
@@ -300,6 +301,7 @@ export const useStudentStore = defineStore('student', () => {
         equipped: inventoryRes.data?.equipped || {
           frame: null,
           title: null,
+          titles: [],
         },
         miniProfile: inventoryRes.data?.mini_profile || null,
         locker: {

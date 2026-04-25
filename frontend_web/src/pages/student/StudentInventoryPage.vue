@@ -34,9 +34,19 @@
           />
           <div>
             <div class="text-h6 text-weight-bold">{{ auth.user?.name }}</div>
-            <q-badge v-if="previewTitle?.label" color="dark" text-color="warning" class="q-mt-xs">
-              {{ previewTitle.label }}
-            </q-badge>
+            <div v-if="previewTitles.length" class="title-chip-row q-mt-xs">
+              <q-badge
+                v-for="title in previewTitles"
+                :key="title.user_item_id || title.label"
+                color="dark"
+                text-color="warning"
+              >
+                {{ title.label }}
+              </q-badge>
+            </div>
+            <div class="text-caption text-secondary q-mt-sm">
+              {{ activeFrameLabel }}
+            </div>
             <div class="text-caption text-grey-5 q-mt-sm">
               Nivel {{ gamificationSummary.level }} · Racha {{ gamificationSummary.streak || 0 }} días
             </div>
@@ -115,8 +125,9 @@
         <div class="section-head">
           <div>
             <div class="text-h6 text-weight-bold">Títulos comprados</div>
-            <div class="text-caption text-grey-5">Un solo título visible por perfil para mantener la claridad.</div>
+            <div class="text-caption text-grey-5">Puedes mostrar hasta 3 títulos al mismo tiempo en tu mini-perfil y presencia social.</div>
           </div>
+          <q-badge color="secondary" outline>{{ equippedTitleCount }}/3 activos</q-badge>
         </div>
 
         <div v-if="inventoryLoading" class="row q-col-gutter-md">
@@ -156,6 +167,7 @@
               no-caps
               :data-cy="`inventory-title-equip-btn-${item.id}`"
               :loading="equipingItemId === item.id"
+              :disable="!item.is_equipped && equippedTitleCount >= 3"
               :label="item.is_equipped ? 'Quitar' : 'Equipar'"
               @click.stop="toggleEquip(item)"
             />
@@ -272,15 +284,37 @@ const coupons = computed(() => inventory.value?.locker?.coupons || [])
 
 const selectedFrame = computed(() => frames.value.find((item) => item.id === selectedFrameId.value) || null)
 const selectedTitle = computed(() => titles.value.find((item) => item.id === selectedTitleId.value) || null)
+const equippedTitles = computed(() => inventory.value?.equipped?.titles || auth.user?.equipped_profile_titles || [])
+const equippedTitleCount = computed(() => titles.value.filter((item) => item.is_equipped).length)
 
-const previewFrame = computed(() => selectedFrame.value?.frame || inventory.value?.equipped?.frame || auth.user?.equipped_avatar_frame || null)
-const previewTitle = computed(() => selectedTitle.value?.title || inventory.value?.equipped?.title || auth.user?.equipped_profile_title || null)
+const previewFrame = computed(() => (
+  selectedFrameId.value
+    ? (selectedFrame.value?.frame || null)
+    : (inventory.value?.equipped?.frame || auth.user?.equipped_avatar_frame || null)
+))
+const previewTitles = computed(() => {
+  if (selectedTitle.value?.is_equipped === false && equippedTitleCount.value < 3) {
+    return [...equippedTitles.value, selectedTitle.value.title].slice(0, 3).filter(Boolean)
+  }
+
+  return equippedTitles.value.length
+    ? equippedTitles.value
+    : (inventory.value?.equipped?.title ? [inventory.value.equipped.title] : (auth.user?.equipped_profile_title ? [auth.user.equipped_profile_title] : []))
+})
+const activeFrameLabel = computed(() => {
+  const frameName = selectedFrame.value?.shop_item?.name
+    || frames.value.find((item) => item.is_equipped)?.shop_item?.name
+    || inventory.value?.equipped?.frame?.name
+    || auth.user?.equipped_avatar_frame?.name
+
+  return frameName ? `Marco activo: ${frameName}` : 'No tienes un marco equipado todavía.'
+})
 
 watch(
   frames,
   (value) => {
     const equipped = value.find((item) => item.is_equipped)
-    selectedFrameId.value = equipped?.id || value[0]?.id || null
+    selectedFrameId.value = equipped?.id || null
   },
   { immediate: true },
 )
@@ -289,7 +323,7 @@ watch(
   titles,
   (value) => {
     const equipped = value.find((item) => item.is_equipped)
-    selectedTitleId.value = equipped?.id || value[0]?.id || null
+    selectedTitleId.value = equipped?.id || null
   },
   { immediate: true },
 )
@@ -388,6 +422,12 @@ async function copyCoupon(code) {
   display: flex;
   gap: 18px;
   align-items: center;
+}
+
+.title-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .locker-items-grid,

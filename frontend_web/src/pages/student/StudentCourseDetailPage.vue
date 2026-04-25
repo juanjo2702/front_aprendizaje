@@ -250,7 +250,7 @@
             <div class="q-mt-xs">
               Puedes continuar la compra sin cupón o ir a la Tienda de monedas para desbloquear uno.
             </div>
-            <div class="row q-gutter-sm q-mt-sm">
+            <div class="row justify-center q-gutter-sm q-mt-sm checkout-empty-actions">
               <q-btn
                 flat
                 dense
@@ -291,10 +291,10 @@
             </div>
           </q-banner>
 
-          <div v-if="paymentIntent?.qr_code" class="text-center">
+          <div v-if="paymentIntent?.qr_code" class="checkout-qr-panel">
             <img class="checkout-qr" :src="paymentIntent.qr_code" alt="QR de pago" />
-            <div class="text-subtitle1 q-mt-md">Escanea para completar la compra</div>
-            <div class="text-caption text-grey-5">
+            <div class="text-subtitle1 q-mt-md text-center">Escanea para completar la compra</div>
+            <div class="text-caption text-grey-5 text-center">
               Transaccion: {{ paymentIntent.transaction_id }} · {{ formatPrice(paymentIntent.amount) }}
             </div>
             <q-badge class="q-mt-md" :color="paymentCompleted ? 'positive' : 'warning'" text-color="dark">
@@ -597,6 +597,10 @@ async function simulatePayment() {
   background: #101326;
 }
 
+.checkout-empty-actions {
+  width: 100%;
+}
+
 .reward-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -615,6 +619,18 @@ async function simulatePayment() {
 .checkout-qr {
   width: min(280px, 80vw);
   max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+.checkout-qr-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
 }
 
 @media (max-width: 1100px) {

@@ -68,6 +68,16 @@
         Si la lección es de tipo <strong>Actividad</strong>, se activa el editor gamificado con intentos, XP y preview.
       </q-banner>
 
+      <q-banner
+        v-if="course?.review_notes"
+        rounded
+        class="review-banner q-mb-lg"
+        icon="feedback"
+      >
+        <div class="text-weight-bold q-mb-xs">Observación de revisión</div>
+        <div>{{ course.review_notes }}</div>
+      </q-banner>
+
       <q-card class="hero-summary q-pa-lg q-mb-lg">
         <div class="row q-col-gutter-lg items-start">
           <div class="col-12 col-lg-7">
@@ -1177,6 +1187,12 @@ onMounted(loadStructure)
   background: linear-gradient(135deg, rgba(0, 210, 211, 0.14), rgba(108, 92, 231, 0.12));
   color: #eef0fb;
   border: 1px solid rgba(0, 210, 211, 0.16);
+}
+
+.review-banner {
+  background: linear-gradient(135deg, rgba(255, 171, 0, 0.16), rgba(255, 87, 34, 0.12));
+  color: #fff0d6;
+  border: 1px solid rgba(255, 171, 0, 0.24);
 }
 
 .lesson-stack {

@@ -230,9 +230,15 @@ async function saveCourse(payload) {
   saving.value = true
   try {
     const wasEditing = Boolean(editingCourse.value)
+    const hasLocalThumbnail = Boolean(payload.thumbnail_file)
+    const requestPayload = hasLocalThumbnail ? buildCourseFormData(payload, wasEditing) : payload
     const { data } = wasEditing
-      ? await api.put(`/courses/${editingCourse.value.id}`, payload)
-      : await api.post('/courses', payload)
+      ? (
+        hasLocalThumbnail
+          ? await api.post(`/courses/${editingCourse.value.id}`, requestPayload)
+          : await api.put(`/courses/${editingCourse.value.id}`, requestPayload)
+      )
+      : await api.post('/courses', requestPayload)
     await loadCourses()
     courseDialog.value = false
     $q.notify({ type: 'positive', message: wasEditing ? `Curso "${data.title}" actualizado correctamente.` : `Curso "${data.title}" creado correctamente.` })
@@ -336,6 +342,46 @@ function statusActionLabel(course) {
   if (course.status === 'published') return 'Pasar a borrador'
   if (course.status === 'pending') return 'Retirar de revisión'
   return 'Enviar a revisión'
+}
+
+function buildCourseFormData(payload, isUpdate = false) {
+  const formData = new FormData()
+
+  if (isUpdate) {
+    formData.append('_method', 'PUT')
+  }
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (key === 'thumbnail_file') {
+      if (value) {
+        formData.append('thumbnail_file', value, value.name || 'thumbnail')
+      }
+      return
+    }
+
+    if (value === null || value === undefined || value === '') {
+      if (key === 'thumbnail') {
+        formData.append(key, '')
+      }
+      return
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((entry, index) => {
+        formData.append(`${key}[${index}]`, entry)
+      })
+      return
+    }
+
+    if (typeof value === 'boolean') {
+      formData.append(key, value ? '1' : '0')
+      return
+    }
+
+    formData.append(key, value)
+  })
+
+  return formData
 }
 
 onMounted(async () => {

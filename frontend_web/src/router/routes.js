@@ -185,6 +185,18 @@ const routes = [
         },
       },
       {
+        path: 'profile',
+        name: 'teacher-profile',
+        component: () => import('pages/user/UserProfilePage.vue'),
+        meta: {
+          teacherTitle: 'Mi perfil docente',
+          teacherCrumbs: [
+            { label: 'Dashboard', to: { name: 'teacher-dashboard' } },
+            { label: 'Mi perfil' },
+          ],
+        },
+      },
+      {
         path: 'courses',
         name: 'teacher-courses',
         component: () => import('pages/teacher/CourseBuilderPage.vue'),

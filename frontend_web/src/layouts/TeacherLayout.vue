@@ -57,6 +57,10 @@
                 <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
                 <q-item-section>Dashboard docente</q-item-section>
               </q-item>
+              <q-item v-close-popup clickable :to="{ name: 'teacher-profile' }">
+                <q-item-section avatar><q-icon name="manage_accounts" /></q-item-section>
+                <q-item-section>Mi perfil</q-item-section>
+              </q-item>
               <q-item v-close-popup clickable :to="{ name: 'public-catalog' }">
                 <q-item-section avatar><q-icon name="visibility" /></q-item-section>
                 <q-item-section>Vista pública</q-item-section>
@@ -93,6 +97,15 @@
               <div class="text-subtitle1 text-weight-bold">{{ auth.user?.name }}</div>
               <div class="text-caption text-grey-5">Panel docente activo</div>
             </div>
+            <q-btn
+              flat
+              round
+              dense
+              icon="edit"
+              color="primary"
+              aria-label="Editar perfil docente"
+              @click="router.push({ name: 'teacher-profile' })"
+            />
           </div>
         </q-card>
 
@@ -191,6 +204,12 @@ const navItems = [
     label: 'Dashboard',
     caption: 'Resumen operativo y próximos pasos.',
     icon: 'dashboard_customize',
+  },
+  {
+    name: 'teacher-profile',
+    label: 'Mi perfil',
+    caption: 'Foto, biografía y datos públicos del docente.',
+    icon: 'manage_accounts',
   },
   {
     name: 'teacher-courses',

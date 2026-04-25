@@ -428,15 +428,27 @@ function openCourseManager() {
 }
 
 function openAlertContext(alert) {
-  if (!alert?.lesson_id) return
+  if (alert?.lesson_id) {
+    router.push({
+      name: 'teacher-lesson-preview',
+      params: { lessonId: alert.lesson_id },
+      query: {
+        courseTitle: alert.course_title || '',
+        focusComment: alert.id ? String(alert.id) : '',
+      },
+    })
+    return
+  }
 
-  router.push({
-    name: 'teacher-lesson-preview',
-    params: { lessonId: alert.lesson_id },
-    query: {
-      courseTitle: alert.course_title || '',
-    },
-  })
+  if (alert?.course_slug) {
+    router.push({
+      name: 'teacher-course-preview',
+      params: { slug: alert.course_slug },
+      query: {
+        focusComment: alert.id ? String(alert.id) : '',
+      },
+    })
+  }
 }
 
 function describeAlert(alert) {
