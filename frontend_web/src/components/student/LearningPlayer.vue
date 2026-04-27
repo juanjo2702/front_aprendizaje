@@ -75,6 +75,21 @@
           />
         </div>
 
+        <div
+          v-if="showExternalVideoManualButton"
+          class="row justify-center q-mt-md"
+        >
+          <q-btn
+            color="secondary"
+            no-caps
+            icon="task_alt"
+            label="Marcar video como visto"
+            :loading="videoCompleted"
+            :disable="isCurrentLessonCompleted()"
+            @click="handleVideoEnded"
+          />
+        </div>
+
         <CommentSection
           v-if="commentTarget"
           class="q-mt-lg"
@@ -158,6 +173,10 @@ const interactiveAttemptState = computed(() => responseData.value?.interactive_a
 const commentTarget = computed(() => responseData.value?.comment_target || null)
 const overallProgress = computed(() => responseData.value?.course?.progress?.overall_progress || 0)
 const hasPendingQueue = computed(() => pendingProgressQueue.value.length > 0)
+const videoTrackingMode = computed(() => content.value?.payload?.tracking_mode || 'native')
+const showExternalVideoManualButton = computed(() => (
+  content.value.kind === 'video' && videoTrackingMode.value === 'manual'
+))
 
 const currentRenderer = computed(() => {
   if (content.value.kind === 'video') return StudentVideoPlayer
@@ -173,6 +192,7 @@ const rendererProps = computed(() => {
       embedUrl: content.value.payload?.embed_url || '',
       provider: content.value.payload?.provider || '',
       poster: course.value?.thumbnail || '',
+      trackingMode: videoTrackingMode.value,
     }
   }
 
@@ -313,7 +333,7 @@ function onQaVideoEnded() {
 }
 
 async function handleVideoEnded() {
-  if (videoCompleted.value) return
+  if (videoCompleted.value || isCurrentLessonCompleted()) return
   videoCompleted.value = true
 
   try {

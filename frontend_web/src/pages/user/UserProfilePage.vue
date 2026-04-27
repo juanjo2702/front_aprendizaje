@@ -344,9 +344,12 @@ async function uploadAvatar() {
     const formData = new FormData()
     formData.append('avatar', avatarCandidate.value, avatarCandidate.value.name || 'avatar')
     const { data } = await api.post('/profile/avatar', formData)
-    user.value = data.user
-    auth.setSession(auth.token, data.user)
-    await auth.fetchProfile()
+    auth.setSession(auth.token, data.user, { bustAvatar: true })
+    auth.refreshAvatar(data.user?.avatar, data.user)
+    user.value = {
+      ...data.user,
+      avatar: auth.user?.avatar || data.user?.avatar,
+    }
     avatarFile.value = null
     $q.notify({ type: 'positive', message: data.message || 'Foto actualizada correctamente.' })
   } catch (error) {

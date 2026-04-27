@@ -13,6 +13,34 @@ export const useAuthStore = defineStore('auth', () => {
   const isInstructor = computed(() => user.value?.role === 'instructor')
   const isStudent = computed(() => user.value?.role === 'student')
 
+  function withAvatarCacheBuster(avatarUrl, stamp = Date.now()) {
+    const normalized = String(avatarUrl || '').trim()
+
+    if (!normalized) return normalized
+
+    try {
+      const target = new URL(normalized, window.location.origin)
+      target.searchParams.set('t', String(stamp))
+      return target.toString()
+    } catch {
+      const [base] = normalized.split('?')
+      const separator = base.includes('?') ? '&' : '?'
+      return `${base}${separator}t=${stamp}`
+    }
+  }
+
+  function normalizeUserPayload(payload, options = {}) {
+    if (!payload) return payload
+
+    const normalized = { ...payload }
+
+    if (options.bustAvatar && normalized.avatar) {
+      normalized.avatar = withAvatarCacheBuster(normalized.avatar, options.timestamp)
+    }
+
+    return normalized
+  }
+
   // ── Actions ────────────────────────────────────────────────
   async function login(email, password) {
     const { data } = await api.post('/login', { email, password })
@@ -33,9 +61,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchProfile() {
     const { data } = await api.get('/profile')
-    user.value = data
-    localStorage.setItem('user', JSON.stringify(data))
-    return data
+    const normalized = normalizeUserPayload(data)
+    user.value = normalized
+    localStorage.setItem('user', JSON.stringify(normalized))
+    return normalized
   }
 
   async function logout() {
@@ -47,11 +76,35 @@ export const useAuthStore = defineStore('auth', () => {
     clear()
   }
 
-  function setSession(t, u) {
-    token.value = t
-    user.value = u
-    localStorage.setItem('token', t)
-    localStorage.setItem('user', JSON.stringify(u))
+  function setSession(t, u, options = {}) {
+    const sessionToken = t || token.value
+    const normalized = normalizeUserPayload(u, options)
+
+    token.value = sessionToken
+    user.value = normalized
+
+    if (sessionToken) {
+      localStorage.setItem('token', sessionToken)
+    }
+
+    localStorage.setItem('user', JSON.stringify(normalized))
+  }
+
+  function refreshAvatar(avatarUrl, extraUser = null) {
+    if (!user.value && !extraUser) return null
+
+    const normalized = normalizeUserPayload(
+      {
+        ...(user.value || {}),
+        ...(extraUser || {}),
+        avatar: avatarUrl || extraUser?.avatar || user.value?.avatar || '',
+      },
+      { bustAvatar: true }
+    )
+
+    user.value = normalized
+    localStorage.setItem('user', JSON.stringify(normalized))
+    return normalized
   }
 
   function clear() {
@@ -74,5 +127,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clear,
     setSession,
+    refreshAvatar,
   }
 })
