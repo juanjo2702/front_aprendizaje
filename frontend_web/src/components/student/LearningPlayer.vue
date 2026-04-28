@@ -55,6 +55,15 @@
           <div class="row q-gutter-sm items-center">
             <q-badge v-if="hasPendingQueue" color="warning" text-color="dark" label="Sincronizacion pendiente" />
             <q-btn
+              v-if="showExternalVideoManualButton"
+              color="secondary"
+              no-caps
+              icon="task_alt"
+              label="Marcar video como visto"
+              :loading="videoCompleted"
+              @click="handleVideoEnded"
+            />
+            <q-btn
               flat
               no-caps
               color="grey-4"
@@ -72,21 +81,6 @@
             v-bind="rendererProps"
             @ended="handleVideoEnded"
             @completed="handleInteractiveCompleted"
-          />
-        </div>
-
-        <div
-          v-if="showExternalVideoManualButton"
-          class="row justify-center q-mt-md"
-        >
-          <q-btn
-            color="secondary"
-            no-caps
-            icon="task_alt"
-            label="Marcar video como visto"
-            :loading="videoCompleted"
-            :disable="isCurrentLessonCompleted()"
-            @click="handleVideoEnded"
           />
         </div>
 
@@ -175,7 +169,9 @@ const overallProgress = computed(() => responseData.value?.course?.progress?.ove
 const hasPendingQueue = computed(() => pendingProgressQueue.value.length > 0)
 const videoTrackingMode = computed(() => content.value?.payload?.tracking_mode || 'native')
 const showExternalVideoManualButton = computed(() => (
-  content.value.kind === 'video' && videoTrackingMode.value === 'manual'
+  content.value.kind === 'video'
+    && videoTrackingMode.value !== 'native'
+    && !isCurrentLessonCompleted()
 ))
 
 const currentRenderer = computed(() => {
@@ -332,6 +328,29 @@ function onQaVideoEnded() {
   handleVideoEnded()
 }
 
+function applyLessonCompletionSnapshot(snapshot) {
+  if (!snapshot || !responseData.value) return
+
+  responseData.value = {
+    ...responseData.value,
+    course: {
+      ...(responseData.value.course || {}),
+      progress: snapshot,
+    },
+    sidebar: {
+      ...(responseData.value.sidebar || {}),
+      modules: (responseData.value.sidebar?.modules || []).map((module) => ({
+        ...module,
+        lessons: (module.lessons || []).map((item) => (
+          Number(item.id) === Number(lesson.value.id)
+            ? { ...item, is_completed: true }
+            : item
+        )),
+      })),
+    },
+  }
+}
+
 async function handleVideoEnded() {
   if (videoCompleted.value || isCurrentLessonCompleted()) return
   videoCompleted.value = true
@@ -347,6 +366,7 @@ async function handleVideoEnded() {
       return
     }
 
+    applyLessonCompletionSnapshot(result?.progress)
     serverVictoryMessage.value = 'Leccion completada y validada por el servidor.'
     await loadLesson(lesson.value.id)
   } catch (error) {
