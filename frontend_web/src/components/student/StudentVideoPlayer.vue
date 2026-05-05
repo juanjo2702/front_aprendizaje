@@ -146,10 +146,10 @@ const iframeSource = computed(() => {
 
 const effectiveTrackingMode = computed(() => {
   const explicit = String(props.trackingMode || '').toLowerCase()
-  if (explicit) return explicit
+  if (explicit && explicit !== 'native') return explicit
 
   const provider = String(props.provider || '').toLowerCase()
-  if (provider) return provider
+  if (provider && provider !== 'native' && provider !== 'external') return provider
 
   if (iframeSource.value.includes('youtube.com/embed/')) return 'youtube'
   if (iframeSource.value.includes('player.vimeo.com/video/')) return 'vimeo'

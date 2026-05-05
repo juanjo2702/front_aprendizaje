@@ -144,7 +144,7 @@
                   v-for="lesson in mod.lessons"
                   :key="lesson.id"
                   class="q-pl-xl"
-                  :clickable="previewMode"
+                  :clickable="previewMode || lesson.is_free"
                   @click="openCurriculumLesson(lesson)"
                 >
                   <q-item-section avatar>
@@ -272,8 +272,16 @@ function goToLearning() {
 }
 
 function openCurriculumLesson(lesson) {
-  if (!props.previewMode || !lesson?.id) return
-  router.push({ name: 'teacher-lesson-preview', params: { lessonId: lesson.id } })
+  if (!lesson?.id) return
+
+  if (props.previewMode) {
+    router.push({ name: 'teacher-lesson-preview', params: { lessonId: lesson.id } })
+    return
+  }
+
+  if (lesson.is_free) {
+    router.push(`/lessons/${lesson.id}`)
+  }
 }
 
 function openCheckout() {

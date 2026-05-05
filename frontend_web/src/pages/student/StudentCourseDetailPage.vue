@@ -65,7 +65,12 @@
               :label="module.title"
             >
               <q-list separator dark>
-                <q-item v-for="lesson in module.lessons || []" :key="lesson.id">
+                <q-item
+                  v-for="lesson in module.lessons || []"
+                  :key="lesson.id"
+                  :clickable="lesson.is_free"
+                  @click="openFreeLesson(lesson)"
+                >
                   <q-item-section avatar>
                     <q-icon :name="lessonIcon(lesson.normalized_type || lesson.type)" color="secondary" />
                   </q-item-section>
@@ -429,6 +434,11 @@ function goToLearning() {
   const firstLesson = currentCourse.value?.modules?.flatMap((module) => module.lessons || []).find(Boolean)
   if (!firstLesson) return
   router.push({ name: 'student-learning', params: { lessonId: firstLesson.id } })
+}
+
+function openFreeLesson(lesson) {
+  if (!lesson?.id || !lesson.is_free) return
+  router.push({ name: 'student-learning', params: { lessonId: lesson.id } })
 }
 
 async function openCheckout() {
